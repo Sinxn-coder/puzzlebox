@@ -40,6 +40,14 @@ void main() {
       () => Future<void>.delayed(const Duration(milliseconds: 700)),
     );
     await tester.pump();
+    
+    // Dismiss the "How to Play" dialog that appears on first launch
+    final gotIt = find.text('Got it');
+    if (gotIt.evaluate().isNotEmpty) {
+      await tester.tap(gotIt);
+      await tester.pumpAndSettle();
+    }
+    
     return prefs;
   }
 

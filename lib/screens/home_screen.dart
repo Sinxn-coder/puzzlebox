@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/app_scaffold.dart';
-import '../core/services/game_rules.dart';
+
 import '../core/services/practice_service.dart';
 import '../games/daily_five/widgets/daily_five_screen.dart';
 import '../games/connections/connections_screen.dart';
@@ -202,7 +202,7 @@ class _HomeState extends ConsumerState<HomeScreen> {
       context: context,
       isScrollControlled: true,
       builder: (_) =>
-          SingleChildScrollView(child: SettingsSheet(helpText: rulesFor(''))),
+          const SingleChildScrollView(child: SettingsSheet()),
     );
   }
 
@@ -334,10 +334,12 @@ class _HomeState extends ConsumerState<HomeScreen> {
                         child: TextField(
                           controller: _searchController,
                           onChanged: (v) => setState(() => _query = v),
+                          textAlignVertical: TextAlignVertical.center,
                           style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
                           decoration: InputDecoration(
                             border: InputBorder.none,
-                            hintText: '# Search puzzle or category...',
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            hintText: 'Search puzzles...',
                             hintStyle: TextStyle(
                               color: colors.onSurfaceVariant,
                               fontWeight: FontWeight.w700,
@@ -369,14 +371,54 @@ class _HomeState extends ConsumerState<HomeScreen> {
                           BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
                         ],
                       ),
-                      child: IconButton(
+                      child: PopupMenuButton<String>(
                         icon: const Icon(Icons.grid_view_rounded, color: Colors.black, size: 24),
-                        onPressed: () {
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16),
+                          side: const BorderSide(color: Colors.black, width: 2),
+                        ),
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        onSelected: (String cat) {
                           setState(() {
-                            _filter = 'All';
-                            _query = '';
-                            _searchController.clear();
+                            _filter = cat;
                           });
+                        },
+                        itemBuilder: (BuildContext context) {
+                          return _categoryIcons.keys.map((String cat) {
+                            final count = cat == 'All'
+                                ? _games.length
+                                : _games.where((g) => g.$5 == cat).length;
+                            final isSelected = _filter == cat;
+                            return PopupMenuItem<String>(
+                              value: cat,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                decoration: isSelected ? BoxDecoration(
+                                  color: primaryAccent,
+                                  borderRadius: BorderRadius.circular(12),
+                                ) : null,
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      _categoryIcons[cat], 
+                                      size: 20, 
+                                      color: isSelected ? Colors.black : primaryAccent,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        '$cat ($count)', 
+                                        style: TextStyle(
+                                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
+                                          color: isSelected ? Colors.black : (isDark ? Colors.white : Colors.black),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }).toList();
                         },
                       ),
                     ),
@@ -451,32 +493,6 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    SizedBox(
-                      height: 42,
-                      child: ListView.separated(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _categoryIcons.length,
-                        separatorBuilder: (_, _) => const SizedBox(width: 8),
-                        itemBuilder: (context, i) {
-                          final cat = _categoryIcons.keys.elementAt(i);
-                          final selected = _filter == cat;
-                          final count = cat == 'All'
-                              ? _games.length
-                              : _games.where((g) => g.$5 == cat).length;
-                          return ChoiceChip(
-                            avatar: Icon(
-                              _categoryIcons[cat],
-                              size: 16,
-                              color: selected ? Colors.black : colors.onSurfaceVariant,
-                            ),
-                            label: Text('$cat ($count)'),
-                            selected: selected,
-                            onSelected: (_) => setState(() => _filter = cat),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 20),
                   ],
                 ),
               ),

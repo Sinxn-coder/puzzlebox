@@ -406,6 +406,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
 
     return AppScaffold(
       title: 'Chess',
+      showBackButton: true,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

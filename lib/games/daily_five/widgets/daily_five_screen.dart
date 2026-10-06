@@ -102,11 +102,6 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
           tooltip: 'Stats',
           onTap: () => _showResultModal(context),
         ),
-        AppBarIconButton(
-          icon: Icons.settings_outlined,
-          tooltip: 'Settings',
-          onTap: () => _showSettings(context),
-        ),
       ],
       body: Column(
         children: [
@@ -206,17 +201,6 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
     );
   }
 
-  void _showSettings(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SettingsSheet(),
-    );
-  }
 }
 
 /// Transient error/warning handler for Daily Five.

@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:share_plus/share_plus.dart';
 import '../core/services/stats_service.dart';
+import '../core/services/pdf_export_service.dart';
 import '../core/widgets/app_scaffold.dart';
 import '../core/services/practice_service.dart';
 import '../core/services/engagement_service.dart';
@@ -110,41 +109,14 @@ class UnifiedStatsScreen extends ConsumerWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                  color: primaryAccent,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(color: Colors.black, width: 2.2),
                   boxShadow: const [
                     BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
                   ],
                 ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: Icon(Icons.share_rounded, size: 19, color: isDark ? Colors.white : Colors.black),
-                  tooltip: 'Share Statistics',
-                  onPressed: () async {
-                    final text = '''
-Puzzlebox Statistics
-• Completed Puzzles: ${engagement.totalCompleted}
-• Current Streak: ${engagement.currentStreak} Days
-• Best Streak: ${engagement.bestStreak} Days
-• Total Play Time: ${_time(engagement.totalSeconds)}
-
-https://puzzlebox.q04ti.dev
-'''.trim();
-                    await Clipboard.setData(ClipboardData(text: text));
-                    try {
-                      await Share.share(text);
-                    } catch (_) {}
-                    if (context.mounted) {
-                      NeoToast.show(
-                        context,
-                        'Statistics copied to clipboard!',
-                        icon: Icons.check_circle_rounded,
-                        color: const Color(0xFF4ADE80),
-                      );
-                    }
-                  },
-                ),
+                child: _ExportButton(engagement: engagement, accentColor: primaryAccent),
               ),
             ],
           ),
@@ -505,4 +477,61 @@ String _time(int seconds) {
   if (seconds < 60) return '${seconds}s';
   final minutes = seconds ~/ 60;
   return minutes < 60 ? '${minutes}m' : '${minutes ~/ 60}h ${minutes % 60}m';
+}
+
+class _ExportButton extends StatefulWidget {
+  final EngagementSnapshot engagement;
+  final Color accentColor;
+  
+  const _ExportButton({required this.engagement, required this.accentColor});
+
+  @override
+  State<_ExportButton> createState() => _ExportButtonState();
+}
+
+class _ExportButtonState extends State<_ExportButton> {
+  bool _isExporting = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      padding: EdgeInsets.zero,
+      icon: _isExporting 
+          ? const SizedBox(
+              width: 16, 
+              height: 16, 
+              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black)
+            )
+          : const Icon(Icons.share_rounded, size: 19, color: Colors.black),
+      tooltip: 'Share Statistics',
+      onPressed: _isExporting ? null : () async {
+        setState(() => _isExporting = true);
+        try {
+          await PdfExportService.generateAndShareStats(
+            engagement: widget.engagement,
+            accentColor: widget.accentColor,
+          );
+          if (context.mounted) {
+            NeoToast.show(
+              context,
+              'PDF generated and shared!',
+              icon: Icons.check_circle_rounded,
+              color: const Color(0xFF4ADE80),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            NeoToast.show(
+              context,
+              'Failed to generate PDF.',
+              icon: Icons.error_rounded,
+              color: const Color(0xFFF43F5E),
+            );
+          }
+        } finally {
+          if (mounted) setState(() => _isExporting = false);
+        }
+      },
+    );
+  }
 }

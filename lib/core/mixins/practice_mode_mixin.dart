@@ -28,6 +28,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   bool _finishing = false;
   bool _transitioning = false;
   bool _advanceReserved = false;
+  bool _isDisposing = false;
   Timer? _advanceTimer;
   Timer? _saveTimer;
   final Stopwatch _sessionWatch = Stopwatch();
@@ -71,10 +72,15 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (_sessionWatch.isRunning) {
       final elapsed = _sessionWatch.elapsed.inSeconds;
       if (elapsed > 0) {
-        ref.read(engagementServiceProvider).addPlayTime(elapsed);
+        if (!_isDisposing) {
+          try {
+            ref.read(engagementServiceProvider).addPlayTime(elapsed);
+            ref.read(engagementRevisionProvider.notifier).state++;
+          } catch (_) {}
+        }
+
         _sessionWatch.reset();
         _sessionWatch.start();
-        ref.read(engagementRevisionProvider.notifier).state++;
       }
     }
     if (_prefs == null || _sessionKey == null || _finishing) return;
@@ -281,6 +287,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   );
   @override
   void dispose() {
+    _isDisposing = true;
     _saveSession();
     _saveTimer?.cancel();
     _advanceTimer?.cancel();

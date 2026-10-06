@@ -31,6 +31,38 @@ class AppScaffold extends ConsumerWidget {
     final mainTitle = parts.first;
     final modeTag = parts.length > 1 ? parts[1] : null;
 
+    final prefs = ref.read(sharedPreferencesProvider);
+    final rulesKey = 'has_seen_rules_$mainTitle';
+    final hasSeenRules = prefs.getBool(rulesKey) ?? false;
+
+    if (!hasSeenRules) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        prefs.setBool(rulesKey, true);
+        final rules = rulesFor(title);
+        if (context.mounted) {
+          showDialog(
+            context: context,
+            builder: (_) => AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+                side: const BorderSide(color: Colors.black, width: 2),
+              ),
+              title: const Text('How to Play', style: TextStyle(fontWeight: FontWeight.w900)),
+              content: SingleChildScrollView(
+                child: Text(rules, style: const TextStyle(height: 1.4, fontWeight: FontWeight.w600)),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Got it', style: TextStyle(fontWeight: FontWeight.w900)),
+                ),
+              ],
+            ),
+          );
+        }
+      });
+    }
+
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
@@ -84,13 +116,13 @@ class AppScaffold extends ConsumerWidget {
                 ),
                 child: IconButton(
                   padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.palette_outlined, size: 20, color: Colors.black),
-                  tooltip: 'Appearance & settings',
+                  icon: const Icon(Icons.settings_outlined, size: 20, color: Colors.black),
+                  tooltip: 'Settings',
                   onPressed: () => showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
-                    builder: (_) => SingleChildScrollView(
-                      child: SettingsSheet(helpText: rulesFor(title)),
+                    builder: (_) => const SingleChildScrollView(
+                      child: SettingsSheet(),
                     ),
                   ),
                 ),
@@ -109,7 +141,54 @@ class AppScaffold extends ConsumerWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 680),
-            child: body,
+            child: Stack(
+              children: [
+                body,
+                Positioned(
+                  top: 12,
+                  right: 12,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.black, width: 2.0),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
+                      ],
+                    ),
+                    child: IconButton(
+                      padding: EdgeInsets.zero,
+                      icon: const Icon(Icons.info_outline_rounded, size: 24, color: Colors.black),
+                      tooltip: 'How to play',
+                      onPressed: () {
+                      final rules = rulesFor(title);
+                      showDialog(
+                        context: context,
+                        builder: (_) => AlertDialog(
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: const BorderSide(color: Colors.black, width: 2),
+                          ),
+                          title: const Text('How to Play', style: TextStyle(fontWeight: FontWeight.w900)),
+                          content: SingleChildScrollView(
+                            child: Text(rules, style: const TextStyle(height: 1.4, fontWeight: FontWeight.w600)),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text('Got it', style: TextStyle(fontWeight: FontWeight.w900)),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -155,8 +234,7 @@ class AppBarIconButton extends StatelessWidget {
 
 /// Settings bottom sheet accessible from every game screen.
 class SettingsSheet extends ConsumerWidget {
-  final String? helpText;
-  const SettingsSheet({super.key, this.helpText});
+  const SettingsSheet({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -164,12 +242,15 @@ class SettingsSheet extends ConsumerWidget {
     final colors = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final paletteNames = [
-      'Sunflower Yellow',
-      'Lime Green',
-      'Rose Pink',
-      'Electric Cyan',
-      'Neon Violet',
+    final paletteOptions = const [
+      ('Mixed', 0),
+      ('Sunflower Yellow', 1),
+      ('Lime Green', 2),
+      ('Rose Pink', 3),
+      ('Electric Cyan', 4),
+      ('Neon Violet', 5),
+      ('Neon Orange', 6),
+      ('Minimal Slate', 7),
     ];
 
     return Container(
@@ -213,21 +294,34 @@ class SettingsSheet extends ConsumerWidget {
             spacing: 8,
             runSpacing: 8,
             children: [
-              for (var i = 0; i < paletteNames.length; i++)
+              for (final opt in paletteOptions)
                 ChoiceChip(
                   avatar: Container(
                     width: 14,
                     height: 14,
                     decoration: BoxDecoration(
-                      color: AppTheme.neoPalettes[i],
+                      color: opt.$2 == 0 ? null : AppTheme.neoPalettes[opt.$2],
+                      gradient: opt.$2 == 0
+                          ? const SweepGradient(
+                              colors: [
+                                Color(0xFFFACC15),
+                                Color(0xFF4ADE80),
+                                Color(0xFFF43F5E),
+                                Color(0xFF38BDF8),
+                                Color(0xFFC084FC),
+                                Color(0xFFFB923C),
+                                Color(0xFFFACC15),
+                              ],
+                            )
+                          : null,
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.black, width: 1.5),
                     ),
                   ),
-                  label: Text(paletteNames[i]),
-                  selected: settings.palette == i,
+                  label: Text(opt.$1),
+                  selected: settings.palette == opt.$2,
                   onSelected: (_) =>
-                      ref.read(settingsProvider.notifier).setPalette(i),
+                      ref.read(settingsProvider.notifier).setPalette(opt.$2),
                 ),
             ],
           ),
@@ -274,28 +368,7 @@ class SettingsSheet extends ConsumerWidget {
               ],
             ),
           ),
-          if (helpText != null) ...[
-            const SizedBox(height: 16),
-            ExpansionTile(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: Colors.black, width: 2.0),
-              ),
-              collapsedShape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: const BorderSide(color: Colors.black, width: 2.0),
-              ),
-              backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-              collapsedBackgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
-              title: const Text('How to Play', style: TextStyle(fontWeight: FontWeight.w900)),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(helpText!, style: const TextStyle(height: 1.5, fontWeight: FontWeight.w600)),
-                ),
-              ],
-            ),
-          ],
+
         ],
       ),
     );

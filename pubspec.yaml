@@ -2,7 +2,7 @@ name: puzzlebox
 description: "Puzzlebox — Daily word & logic puzzle games"
 publish_to: 'none'
 
-version: 1.1.0+2
+version: 1.2.0+8
 
 
 environment:
@@ -29,6 +29,8 @@ dependencies:
   # Icons
   cupertino_icons: ^1.0.8
   flutter_svg: ^2.0.10
+  path_provider: ^2.1.6
+  pdf: ^3.13.1
 
 dev_dependencies:
   flutter_test:

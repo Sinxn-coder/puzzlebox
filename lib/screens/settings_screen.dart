@@ -81,7 +81,20 @@ class SettingsScreen extends ConsumerWidget {
                   width: 14,
                   height: 14,
                   decoration: BoxDecoration(
-                    color: opt.$2,
+                    color: opt.$3 == 0 ? null : opt.$2,
+                    gradient: opt.$3 == 0
+                        ? const SweepGradient(
+                            colors: [
+                              Color(0xFFFACC15),
+                              Color(0xFF4ADE80),
+                              Color(0xFFF43F5E),
+                              Color(0xFF38BDF8),
+                              Color(0xFFC084FC),
+                              Color(0xFFFB923C),
+                              Color(0xFFFACC15),
+                            ],
+                          )
+                        : null,
                     shape: BoxShape.circle,
                     border: Border.all(color: Colors.black, width: 1.5),
                   ),
