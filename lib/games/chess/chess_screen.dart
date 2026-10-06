@@ -97,55 +97,6 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
     _fenHistory.add(_game.fen);
   }
 
-  /// Calculates missing White pieces on current board (captured White pieces)
-  String _getCapturedWhiteText() {
-    final Map<String, int> initialCount = {'p': 8, 'n': 2, 'b': 2, 'r': 2, 'q': 1};
-    final files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    for (int rank = 1; rank <= 8; rank++) {
-      for (final file in files) {
-        final p = _game.get('$file$rank');
-        if (p != null && p.color == chess_lib.Color.WHITE) {
-          final t = p.type.name.toLowerCase();
-          if (initialCount.containsKey(t) && initialCount[t]! > 0) {
-            initialCount[t] = initialCount[t]! - 1;
-          }
-        }
-      }
-    }
-    final List<String> captured = [];
-    final symbols = {'p': '♙', 'n': '♘', 'b': '♗', 'r': '♖', 'q': '♕'};
-    initialCount.forEach((t, missing) {
-      for (int i = 0; i < missing; i++) {
-        captured.add(symbols[t]!);
-      }
-    });
-    return captured.join(' ');
-  }
-
-  /// Calculates missing Black pieces on current board (captured Black pieces)
-  String _getCapturedBlackText() {
-    final Map<String, int> initialCount = {'p': 8, 'n': 2, 'b': 2, 'r': 2, 'q': 1};
-    final files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
-    for (int rank = 1; rank <= 8; rank++) {
-      for (final file in files) {
-        final p = _game.get('$file$rank');
-        if (p != null && p.color == chess_lib.Color.BLACK) {
-          final t = p.type.name.toLowerCase();
-          if (initialCount.containsKey(t) && initialCount[t]! > 0) {
-            initialCount[t] = initialCount[t]! - 1;
-          }
-        }
-      }
-    }
-    final List<String> captured = [];
-    final symbols = {'p': '♟', 'n': '♞', 'b': '♝', 'r': '♜', 'q': '♛'};
-    initialCount.forEach((t, missing) {
-      for (int i = 0; i < missing; i++) {
-        captured.add(symbols[t]!);
-      }
-    });
-    return captured.join(' ');
-  }
 
   Map<chess_lib.PieceType, int> _getCapturedCounts(bool isWhite) {
     final targetColor = isWhite ? chess_lib.Color.WHITE : chess_lib.Color.BLACK;

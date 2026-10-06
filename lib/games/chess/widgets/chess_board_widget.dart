@@ -20,27 +20,6 @@ class ChessBoardWidget extends StatelessWidget {
     required this.onSquareTap,
   });
 
-  /// Map piece to unicode representation
-  static String _getPieceSymbol(chess_lib.Piece? piece) {
-    if (piece == null) return '';
-    final isWhite = piece.color == chess_lib.Color.WHITE;
-    switch (piece.type) {
-      case chess_lib.PieceType.PAWN:
-        return isWhite ? '♙' : '♟';
-      case chess_lib.PieceType.KNIGHT:
-        return isWhite ? '♘' : '♞';
-      case chess_lib.PieceType.BISHOP:
-        return isWhite ? '♗' : '♝';
-      case chess_lib.PieceType.ROOK:
-        return isWhite ? '♖' : '♜';
-      case chess_lib.PieceType.QUEEN:
-        return isWhite ? '♕' : '♛';
-      case chess_lib.PieceType.KING:
-        return isWhite ? '♔' : '♚';
-      default:
-        return '';
-    }
-  }
 
   /// Finds king square if in check
   String? _getCheckedKingSquare() {

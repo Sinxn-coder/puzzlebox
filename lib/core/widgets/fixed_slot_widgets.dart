@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 /// Fixed-height info slot with short fade AnimatedSwitcher.
@@ -163,7 +162,7 @@ class SmoothBoardTransition extends StatelessWidget {
           alignment: Alignment.center,
           children: <Widget>[
             ...previousChildren,
-            if (currentChild != null) currentChild,
+            ?currentChild,
           ],
         );
       },

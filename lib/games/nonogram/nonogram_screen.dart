@@ -249,8 +249,7 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
                     padding: const EdgeInsets.all(12),
                     child: SmoothBoardTransition(
                       keyId: 'nonogram_board_${puzzleSeed()}_${_puzzle!.size}',
-                      child: Container(
-                        child: LayoutBuilder(
+                      child: LayoutBuilder(
                           builder: (context, constraints) {
                             final puzzle = _puzzle!;
                         final maxRowClueLen = puzzle.rowClues
@@ -352,7 +351,6 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
                     ),
                   ),
                 ),
-              ),
             ),
             Container(
               height: 52,
