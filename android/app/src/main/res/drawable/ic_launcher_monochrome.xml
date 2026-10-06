@@ -3,24 +3,20 @@
     android:height="108dp"
     android:viewportWidth="512"
     android:viewportHeight="512">
-    <!-- left eye with pupil cutout -->
+    <!-- Left eye with cutout pupil (counter-winding cutout for universal hole rendering) -->
     <path
-        android:fillColor="#ffffff"
-        android:fillType="evenOdd"
-        android:pathData="M 171,229 a 35,43 0 1,0 70,0 a 35,43 0 1,0 -70,0 M 204,238 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0"/>
-    <!-- right eye with pupil cutout -->
+        android:fillColor="#FF000000"
+        android:pathData="M 171,229 a 35,43 0 1,0 70,0 a 35,43 0 1,0 -70,0 M 204,238 a 12,12 0 1,1 24,0 a 12,12 0 1,1 -24,0 Z" />
+    <!-- Right eye with cutout pupil (counter-winding cutout for universal hole rendering) -->
     <path
-        android:fillColor="#ffffff"
-        android:fillType="evenOdd"
-        android:pathData="M 272,229 a 35,43 0 1,0 70,0 a 35,43 0 1,0 -70,0 M 285,238 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0"/>
-    <!-- smile -->
+        android:fillColor="#FF000000"
+        android:pathData="M 272,229 a 35,43 0 1,0 70,0 a 35,43 0 1,0 -70,0 M 285,238 a 12,12 0 1,1 24,0 a 12,12 0 1,1 -24,0 Z" />
+    <!-- Smile (solid filled ribbon with round end caps) -->
     <path
-        android:strokeColor="#ffffff"
-        android:strokeLineCap="round"
-        android:strokeWidth="16"
-        android:pathData="M209 296c26 31 69 31 95 0"/>
-    <!-- star -->
+        android:fillColor="#FF000000"
+        android:pathData="M 209,288 C 235,319 278,319 304,288 A 8,8 0 0,1 304,304 C 278,335 235,335 209,304 A 8,8 0 0,1 209,288 Z" />
+    <!-- Star sparkle (centered within the 66dp safe zone) -->
     <path
-        android:fillColor="#ffffff"
-        android:pathData="m410 71 12 30 31 12-31 12-12 31-12-31-31-12 31-12z"/>
+        android:fillColor="#FF000000"
+        android:pathData="M 345,140 L 350,155 L 365,160 L 350,165 L 345,180 L 340,165 L 325,160 L 340,155 Z" />
 </vector>

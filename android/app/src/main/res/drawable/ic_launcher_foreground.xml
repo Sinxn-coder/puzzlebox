@@ -3,14 +3,14 @@
     android:height="108dp"
     android:viewportWidth="512"
     android:viewportHeight="512">
-    <!-- eyes bg -->
+    <!-- Eyes background (white) -->
     <path android:fillColor="#ffffff" android:pathData="M 171,229 a 35,43 0 1,0 70,0 a 35,43 0 1,0 -70,0"/>
     <path android:fillColor="#ffffff" android:pathData="M 272,229 a 35,43 0 1,0 70,0 a 35,43 0 1,0 -70,0"/>
-    <!-- pupils -->
+    <!-- Pupils (green) -->
     <path android:fillColor="#3D7C16" android:pathData="M 204,238 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0"/>
     <path android:fillColor="#3D7C16" android:pathData="M 285,238 a 12,12 0 1,0 24,0 a 12,12 0 1,0 -24,0"/>
-    <!-- smile -->
-    <path android:strokeColor="#ffffff" android:strokeLineCap="round" android:strokeWidth="16" android:pathData="M209 296c26 31 69 31 95 0"/>
-    <!-- star -->
-    <path android:fillColor="#FFD568" android:pathData="m410 71 12 30 31 12-31 12-12 31-12-31-31-12 31-12z"/>
+    <!-- Smile (filled ribbon with rounded caps) -->
+    <path android:fillColor="#ffffff" android:pathData="M 209,288 C 235,319 278,319 304,288 A 8,8 0 0,1 304,304 C 278,335 235,335 209,304 A 8,8 0 0,1 209,288 Z"/>
+    <!-- Star sparkle (within safe zone) -->
+    <path android:fillColor="#FFD568" android:pathData="M 345,140 L 350,155 L 365,160 L 350,165 L 345,180 L 340,165 L 325,160 L 340,155 Z"/>
 </vector>

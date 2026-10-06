@@ -13,7 +13,7 @@ if (releasePropertiesFile.exists()) releasePropertiesFile.inputStream().use { re
 
 android {
     namespace = "com.etriq.puzzlebox"
-    compileSdk = 35
+    compileSdk = 36
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
