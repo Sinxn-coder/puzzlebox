@@ -48,7 +48,7 @@ Everything is 100% free, offline, and ad-free. No accounts, no subscriptions, no
 
 Want to see a new puzzle game added to Puzzlebox, or have feedback to make the app even better?
 
-**[Submit a Suggestion on puzzlebox.q04ti.dev](https://puzzlebox.q04ti.dev/#suggestions)**
+**[Submit a Suggestion on puzzlebox.q04ti.dev](https://puzzlebox.q04ti.dev/suggestions)**
 
 ---
 
@@ -57,4 +57,4 @@ Want to see a new puzzle game added to Puzzlebox, or have feedback to make the a
 Puzzlebox respects your privacy:
 * All game progress and stats stay stored locally on your device.
 * No tracking, analytics, or background data collection.
-* Read the full [Privacy Policy](https://puzzlebox.q04ti.dev/#privacy-policy).
+* Read the full [Privacy Policy](https://puzzlebox.q04ti.dev/privacy-policy).

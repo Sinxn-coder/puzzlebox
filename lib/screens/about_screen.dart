@@ -251,7 +251,7 @@ class AboutScreen extends ConsumerWidget {
                     title: const Text('Suggest a Game or Feature', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
                     subtitle: const Text('Got an idea for a new game or update?', style: TextStyle(fontWeight: FontWeight.w600)),
                     trailing: Icon(Icons.open_in_new_rounded, size: 18, color: isDark ? Colors.white : Colors.black),
-                    onTap: () => _open(context, 'https://puzzlebox.q04ti.dev/#suggestions'),
+                    onTap: () => _open(context, 'https://puzzlebox.q04ti.dev/suggestions'),
                   ),
                   const Divider(color: Colors.black, thickness: 2, height: 1),
                   ListTile(
@@ -259,7 +259,7 @@ class AboutScreen extends ConsumerWidget {
                     title: const Text('Privacy Policy', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
                     subtitle: const Text('Official hosted privacy policy', style: TextStyle(fontWeight: FontWeight.w600)),
                     trailing: Icon(Icons.open_in_new_rounded, size: 18, color: isDark ? Colors.white : Colors.black),
-                    onTap: () => _open(context, 'https://puzzlebox.q04ti.dev/#privacy-policy'),
+                    onTap: () => _open(context, 'https://puzzlebox.q04ti.dev/privacy-policy'),
                   ),
                 ],
               ),
