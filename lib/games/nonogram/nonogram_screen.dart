@@ -267,19 +267,21 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
                           32.0,
                           88.0,
                         );
-                        final cell =
-                            ((constraints.maxWidth - leftWidth) /
-                                    puzzle.size)
-                                .clamp(18.0, 46.0);
+                        final availableWidth = constraints.maxWidth - leftWidth;
+                        final cell = availableWidth > 0
+                            ? (availableWidth / puzzle.size).clamp(10.0, 46.0)
+                            : 18.0;
                         final gridHeight =
                             constraints.maxHeight - topHeight;
                         final cellFromHeight =
-                            (gridHeight / puzzle.size).clamp(18.0, 46.0);
+                            (gridHeight / puzzle.size).clamp(10.0, 46.0);
                         final size = cell < cellFromHeight
                             ? cell
                             : cellFromHeight;
                         return SingleChildScrollView(
-                          child: Column(
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Column(
                             children: [
                               Row(
                                 children: [
@@ -344,7 +346,8 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
                                 ),
                             ],
                           ),
-                        );
+                        ),
+                      );
                       },
                     ),
                   ),

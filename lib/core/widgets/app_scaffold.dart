@@ -119,54 +119,7 @@ class AppScaffold extends ConsumerWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 680),
-            child: Stack(
-              children: [
-                body,
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.black, width: 2.0),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                      ],
-                    ),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.info_outline_rounded, size: 24, color: Colors.black),
-                      tooltip: 'How to play',
-                      onPressed: () {
-                      final rules = rulesFor(title);
-                      showDialog(
-                        context: context,
-                        builder: (_) => AlertDialog(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            side: const BorderSide(color: Colors.black, width: 2),
-                          ),
-                          title: const Text('How to Play', style: TextStyle(fontWeight: FontWeight.w900)),
-                          content: SingleChildScrollView(
-                            child: Text(rules, style: const TextStyle(height: 1.4, fontWeight: FontWeight.w600)),
-                          ),
-                          actions: [
-                            TextButton(
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text('Got it', style: TextStyle(fontWeight: FontWeight.w900)),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                ),
-              ],
-            ),
+            child: body,
           ),
         ),
       ),

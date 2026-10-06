@@ -14,6 +14,7 @@ import 'result_modal.dart';
 
 import '../../../core/widgets/game_mode_toggle.dart';
 import '../../../core/widgets/neo_toast.dart';
+import '../../../core/widgets/fixed_slot_widgets.dart';
 import '../../../core/widgets/neo_difficulty_bar.dart';
 import '../../../core/services/app_feedback_service.dart';
 
@@ -128,8 +129,11 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
           Expanded(
             child: Center(
               child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8),
-                child: GameBoard(mode: _mode),
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: SmoothBoardTransition(
+                  keyId: 'd5_${_mode}_${_difficulty}_${game.puzzleNumber}',
+                  child: GameBoard(mode: _mode),
+                ),
               ),
             ),
           ),
