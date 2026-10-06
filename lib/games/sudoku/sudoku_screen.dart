@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'sudoku_generator.dart';
 import 'package:flutter/material.dart';
@@ -313,23 +314,32 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                 Divider(height: 1),
 
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Wrap(
-                    spacing: 12,
-                    alignment: WrapAlignment.spaceBetween,
-                    children: [
-                      Text('Unique solution'),
-                      Text(
-                        'Time $timerStr',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: SizedBox(
+                      width: 380,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Unique solution',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          Text(
+                            'Time $timerStr',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w900,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
                 ),
-                Divider(height: 1),
+                const Divider(height: 1),
 
                 Expanded(
                   child: Center(
@@ -427,12 +437,13 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                 ),
 
                 // Control Action Row
+                // Control Action Row (fixed button slots)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: FittedBox(
                     fit: BoxFit.scaleDown,
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         GestureDetector(
                           onTap: () => setState(() => _pencilMode = !_pencilMode),
@@ -489,9 +500,13 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                             child: const Text('Erase', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
                           ),
                         ),
-                        if (shouldShowNextButton(_isSolved)) ...[
-                          const SizedBox(width: 6),
-                          GestureDetector(
+                        const SizedBox(width: 6),
+                        Visibility(
+                          visible: shouldShowNextButton(_isSolved),
+                          maintainSize: true,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          child: GestureDetector(
                             onTap: nextPuzzle,
                             child: Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -510,7 +525,7 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                               ),
                             ),
                           ),
-                        ],
+                        ),
                       ],
                     ),
                   ),

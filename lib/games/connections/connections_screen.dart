@@ -417,94 +417,122 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                       ),
                     ),
 
-                  // Mistakes remaining indicator
-                  Wrap(
-                    alignment: WrapAlignment.center,
-                    crossAxisAlignment: WrapCrossAlignment.center,
-                    children: [
-                      const Text(
-                        'Mistakes: ',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w900,
-                          fontSize: 13,
-                        ),
-                      ),
-                      ...List.generate(
-                        4,
-                        (i) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4),
-                          width: 14,
-                          height: 14,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: i < _mistakesRemaining
-                                ? Theme.of(context).colorScheme.primary
-                                : Colors.grey.shade400,
-                            border: Border.all(color: Colors.black, width: 1.5),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Action Buttons or Next Puzzle
-                  if (shouldShowNextButton(_isGameOver)) ...[
-                    ElevatedButton.icon(
-                      icon: const Icon(Icons.arrow_forward_rounded),
-                      label: const Text('Next Puzzle'),
-                      onPressed: nextPuzzle,
-                    ),
-                  ] else ...[
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      spacing: 12,
-                      runSpacing: 10,
+                  // Mistakes remaining indicator (fixed height row)
+                  SizedBox(
+                    height: 28,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: _shuffle,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.black, width: 2.2),
-                              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
-                            ),
-                            child: const Text('Shuffle', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                        const Text(
+                          'Mistakes: ',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w900,
+                            fontSize: 13,
                           ),
                         ),
-                        GestureDetector(
-                          onTap: _selectedWords.isEmpty ? null : _deselectAll,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        ...List.generate(
+                          4,
+                          (i) => Container(
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: 14,
+                            height: 14,
                             decoration: BoxDecoration(
-                              color: _selectedWords.isEmpty ? Colors.grey.shade300 : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.black, width: 2.2),
-                              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
-                            ),
-                            child: const Text('Deselect All', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: _selectedWords.length == 4 && !_isGameOver ? _submit : null,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: _selectedWords.length == 4 && !_isGameOver
+                              shape: BoxShape.circle,
+                              color: i < _mistakesRemaining
                                   ? Theme.of(context).colorScheme.primary
                                   : Colors.grey.shade400,
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: Colors.black, width: 2.2),
-                              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                              border: Border.all(color: Colors.black, width: 1.5),
                             ),
-                            child: const Text('Submit', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
                           ),
                         ),
                       ],
                     ),
-                  ],
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Action Buttons or Next Puzzle (fixed-height container)
+                  SizedBox(
+                    height: 52,
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 150),
+                      child: shouldShowNextButton(_isGameOver)
+                          ? Center(
+                              key: const ValueKey('conn_next'),
+                              child: GestureDetector(
+                                onTap: nextPuzzle,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: Theme.of(context).colorScheme.primary,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: Colors.black, width: 2.2),
+                                    boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: const [
+                                      Text('Next Puzzle', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                                      SizedBox(width: 6),
+                                      Icon(Icons.arrow_forward_rounded, size: 16, color: Colors.black),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            )
+                          : FittedBox(
+                              key: const ValueKey('conn_actions'),
+                              fit: BoxFit.scaleDown,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                GestureDetector(
+                                  onTap: _shuffle,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.black, width: 2.2),
+                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    ),
+                                    child: const Text('Shuffle', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _selectedWords.isEmpty ? null : _deselectAll,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: _selectedWords.isEmpty ? Colors.grey.shade300 : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.black, width: 2.2),
+                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    ),
+                                    child: const Text('Deselect All', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: _selectedWords.length == 4 && !_isGameOver ? _submit : null,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
+                                    decoration: BoxDecoration(
+                                      color: _selectedWords.length == 4 && !_isGameOver
+                                          ? Theme.of(context).colorScheme.primary
+                                          : Colors.grey.shade400,
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(color: Colors.black, width: 2.2),
+                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    ),
+                                    child: const Text('Submit', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                    ),
+                  ),
                 ],
               ),
             ),

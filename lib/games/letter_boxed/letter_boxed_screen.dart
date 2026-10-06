@@ -389,71 +389,83 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
                           ),
                         ),
 
-                        // Controls or Next Puzzle
-                        if (shouldShowNextButton(_isSolved)) ...[
-                          ElevatedButton.icon(
-                            icon: Icon(Icons.arrow_forward_rounded),
-                            label: Text('Next Box'),
-                            onPressed: nextPuzzle,
+                        // Controls or Next Puzzle (fixed height)
+                        SizedBox(
+                          height: 52,
+                          child: AnimatedSwitcher(
+                            duration: const Duration(milliseconds: 150),
+                            child: shouldShowNextButton(_isSolved)
+                                ? Center(
+                                    key: const ValueKey('lb_next'),
+                                    child: ElevatedButton.icon(
+                                      icon: const Icon(Icons.arrow_forward_rounded),
+                                      label: const Text('Next Box'),
+                                      onPressed: nextPuzzle,
+                                    ),
+                                  )
+                                : FittedBox(
+                                    key: const ValueKey('lb_actions'),
+                                    fit: BoxFit.scaleDown,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                      OutlinedButton(
+                                        onPressed: _clearCurrent,
+                                        child: const Text('Clear'),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      IconButton(
+                                        tooltip: 'Delete letter',
+                                        icon: const Icon(Icons.backspace_outlined),
+                                        onPressed: () {
+                                          final minimum = _completedWords.isEmpty
+                                              ? 0
+                                              : 1;
+                                          if (_currentWord.length <= minimum) return;
+                                          setState(() {
+                                            _currentWord = _currentWord.substring(
+                                              0,
+                                              _currentWord.length - 1,
+                                            );
+                                            _lastSide = _currentWord.isEmpty
+                                                ? null
+                                                : _side(
+                                                    _currentWord[_currentWord.length -
+                                                        1],
+                                                  );
+                                          });
+                                        },
+                                      ),
+                                      const SizedBox(width: 6),
+                                      IconButton(
+                                        tooltip: 'Undo word',
+                                        icon: const Icon(Icons.undo),
+                                        onPressed: () {
+                                          if (_completedWords.isEmpty || _isSolved) {
+                                            return;
+                                          }
+                                          setState(() {
+                                            _completedWords.removeLast();
+                                            _usedLetters.clear();
+                                            _usedLetters.addAll(
+                                              _completedWords.join().split(''),
+                                            );
+                                          });
+                                          _clearCurrent();
+                                        },
+                                      ),
+                                      const SizedBox(width: 6),
+                                      ElevatedButton(
+                                        onPressed: _currentWord.length >= 3
+                                            ? _submitWord
+                                            : null,
+                                        child: const Text('Submit Word'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
                           ),
-                        ] else ...[
-                          Wrap(
-                            alignment: WrapAlignment.center,
-                            spacing: 8,
-                            runSpacing: 4,
-                            children: [
-                              OutlinedButton(
-                                onPressed: _clearCurrent,
-                                child: Text('Clear'),
-                              ),
-                              IconButton(
-                                tooltip: 'Delete letter',
-                                icon: const Icon(Icons.backspace_outlined),
-                                onPressed: () {
-                                  final minimum = _completedWords.isEmpty
-                                      ? 0
-                                      : 1;
-                                  if (_currentWord.length <= minimum) return;
-                                  setState(() {
-                                    _currentWord = _currentWord.substring(
-                                      0,
-                                      _currentWord.length - 1,
-                                    );
-                                    _lastSide = _currentWord.isEmpty
-                                        ? null
-                                        : _side(
-                                            _currentWord[_currentWord.length -
-                                                1],
-                                          );
-                                  });
-                                },
-                              ),
-                              IconButton(
-                                tooltip: 'Undo word',
-                                icon: Icon(Icons.undo),
-                                onPressed: () {
-                                  if (_completedWords.isEmpty || _isSolved) {
-                                    return;
-                                  }
-                                  setState(() {
-                                    _completedWords.removeLast();
-                                    _usedLetters.clear();
-                                    _usedLetters.addAll(
-                                      _completedWords.join().split(''),
-                                    );
-                                  });
-                                  _clearCurrent();
-                                },
-                              ),
-                              ElevatedButton(
-                                onPressed: _currentWord.length >= 3
-                                    ? _submitWord
-                                    : null,
-                                child: Text('Submit Word'),
-                              ),
-                            ],
-                          ),
-                        ],
+                        ),
                         SizedBox(height: 12),
 
                         // Completed Words

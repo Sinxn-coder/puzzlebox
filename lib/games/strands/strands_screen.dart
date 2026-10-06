@@ -379,16 +379,29 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
               ],
             ),
           ),
-          if (difficulty == 'Easy')
-            Padding(
-              padding: EdgeInsets.all(8),
-              child: Text(
-                _currentTheme.themeWords
-                    .where((w) => !_foundThemeWords.contains(w))
-                    .join(' · '),
-              ),
+          SizedBox(
+            height: 32,
+            child: AnimatedSwitcher(
+              duration: const Duration(milliseconds: 150),
+              child: difficulty == 'Easy'
+                  ? Center(
+                      key: const ValueKey('strands_easy_words'),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Text(
+                          _currentTheme.themeWords
+                              .where((w) => !_foundThemeWords.contains(w))
+                              .join(' · '),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
+                        ),
+                      ),
+                    )
+                  : const SizedBox.shrink(key: ValueKey('strands_no_words')),
             ),
-          SizedBox(height: 8),
+          ),
+          const SizedBox(height: 4),
 
           // Letter Grid
           Expanded(
@@ -466,9 +479,10 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
             ),
           ),
 
-          // Current Selection display & Submit / Next Puzzle
+          // Current Selection display & Submit / Next Puzzle (fixed height)
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            height: 60,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -477,6 +491,8 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
                     _selectedIndices
                         .map((i) => _currentTheme.grid[i ~/ _cols][i % _cols])
                         .join(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 22,
                       fontWeight: FontWeight.bold,
@@ -484,19 +500,23 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
                     ),
                   ),
                 ),
-                if (shouldShowNextButton(_isSolved))
-                  ElevatedButton.icon(
-                    icon: Icon(Icons.arrow_forward_rounded),
-                    label: Text('Next Strands'),
-                    onPressed: nextPuzzle,
-                  )
-                else
-                  ElevatedButton(
-                    onPressed: _selectedIndices.isNotEmpty
-                        ? _submitSelection
-                        : null,
-                    child: Text('Submit Word'),
-                  ),
+                AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 150),
+                  child: shouldShowNextButton(_isSolved)
+                      ? ElevatedButton.icon(
+                          key: const ValueKey('strands_next'),
+                          icon: const Icon(Icons.arrow_forward_rounded),
+                          label: const Text('Next Strands'),
+                          onPressed: nextPuzzle,
+                        )
+                      : ElevatedButton(
+                          key: const ValueKey('strands_submit'),
+                          onPressed: _selectedIndices.isNotEmpty
+                              ? _submitSelection
+                              : null,
+                          child: const Text('Submit Word'),
+                        ),
+                ),
               ],
             ),
           ),

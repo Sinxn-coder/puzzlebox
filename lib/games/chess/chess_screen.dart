@@ -12,6 +12,7 @@ import 'logic/chess_puzzles_data.dart';
 import 'logic/chess_ai.dart';
 import 'widgets/chess_board_widget.dart';
 import 'widgets/pawn_promotion_dialog.dart';
+import 'widgets/chess_piece_widget.dart';
 
 enum ChessGameMode { dailyPuzzle, vsAI, passAndPlay }
 
@@ -144,6 +145,57 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
       }
     });
     return captured.join(' ');
+  }
+
+  Map<chess_lib.PieceType, int> _getCapturedCounts(bool isWhite) {
+    final targetColor = isWhite ? chess_lib.Color.WHITE : chess_lib.Color.BLACK;
+    final Map<chess_lib.PieceType, int> initialCount = {
+      chess_lib.PieceType.PAWN: 8,
+      chess_lib.PieceType.KNIGHT: 2,
+      chess_lib.PieceType.BISHOP: 2,
+      chess_lib.PieceType.ROOK: 2,
+      chess_lib.PieceType.QUEEN: 1,
+    };
+    final files = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'];
+    for (int rank = 1; rank <= 8; rank++) {
+      for (final file in files) {
+        final p = _game.get('$file$rank');
+        if (p != null && p.color == targetColor) {
+          if (initialCount.containsKey(p.type) && initialCount[p.type]! > 0) {
+            initialCount[p.type] = initialCount[p.type]! - 1;
+          }
+        }
+      }
+    }
+    final Map<chess_lib.PieceType, int> result = {};
+    for (final entry in initialCount.entries) {
+      if (entry.value > 0) {
+        result[entry.key] = entry.value;
+      }
+    }
+    return result;
+  }
+
+  Widget _buildCapturedRow(bool isWhite) {
+    final counts = _getCapturedCounts(isWhite);
+    if (counts.isEmpty) {
+      return const SizedBox(height: 20);
+    }
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final entry in counts.entries)
+          for (int i = 0; i < entry.value; i++)
+            Padding(
+              padding: const EdgeInsets.only(right: 2),
+              child: ChessPieceWidget.fromType(
+                type: entry.key,
+                isWhite: isWhite,
+                size: 20,
+              ),
+            ),
+      ],
+    );
   }
 
   void _onSquareTap(String square) {
@@ -407,10 +459,10 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
     return AppScaffold(
       title: 'Chess',
       body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           children: [
-            // Neo Game Mode Switcher
+            // Mode tab bar (pinned at top)
             Container(
               height: 44,
               padding: const EdgeInsets.all(4),
@@ -422,195 +474,289 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                   BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
                 ],
               ),
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _buildNeoModeTab('Daily Puzzles', ChessGameMode.dailyPuzzle, colors),
-                    _buildNeoModeTab('Vs AI', ChessGameMode.vsAI, colors),
-                    _buildNeoModeTab('Pass & Play', ChessGameMode.passAndPlay, colors),
-                  ],
-                ),
+              child: Row(
+                children: [
+                  Expanded(child: _buildNeoModeTab('Daily Puzzles', ChessGameMode.dailyPuzzle, colors)),
+                  Expanded(child: _buildNeoModeTab('Vs AI', ChessGameMode.vsAI, colors)),
+                  Expanded(child: _buildNeoModeTab('Pass & Play', ChessGameMode.passAndPlay, colors)),
+                ],
               ),
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 14),
 
-            // Mode header info card
-            if (_mode == ChessGameMode.dailyPuzzle)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  borderRadius: BorderRadius.circular(18),
-                  border: Border.all(color: Colors.black, width: 2.5),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Puzzle #${_currentPuzzleIndex + 1}: ${_currentPuzzle.title}',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
+            // Fixed-height Info Card Slot (never collapses or resizes)
+            SizedBox(
+              height: 92,
+              width: double.infinity,
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 150),
+                switchInCurve: Curves.easeIn,
+                switchOutCurve: Curves.easeOut,
+                child: _mode == ChessGameMode.dailyPuzzle
+                    ? Container(
+                        key: const ValueKey('chess_daily_card'),
+                        width: double.infinity,
+                        height: 92,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.black, width: 2.5),
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                          ],
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                          decoration: BoxDecoration(
-                            color: colors.primary,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.black, width: 1.5),
-                          ),
-                          child: Text(
-                            _currentPuzzle.difficulty,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Text(
-                            _currentPuzzle.description,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: colors.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => setState(() => _startNextPuzzle()),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: colors.primary,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.black, width: 1.5),
-                            ),
-                            child: const Row(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Row(
                               children: [
-                                Text('Next', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black)),
-                                SizedBox(width: 4),
-                                Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.black),
+                                Expanded(
+                                  child: Text(
+                                    'Puzzle #${_currentPuzzleIndex + 1}: ${_currentPuzzle.title}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w900,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.black, width: 1.5),
+                                  ),
+                                  child: Text(
+                                    _currentPuzzle.difficulty,
+                                    style: const TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w900,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _currentPuzzle.description,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: colors.onSurfaceVariant,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () => setState(() => _startNextPuzzle()),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                                    decoration: BoxDecoration(
+                                      color: colors.primary,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.black, width: 1.5),
+                                    ),
+                                    child: const Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('Next', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w900, color: Colors.black)),
+                                        SizedBox(width: 4),
+                                        Icon(Icons.arrow_forward_rounded, size: 14, color: Colors.black),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      )
+                    : _mode == ChessGameMode.vsAI
+                        ? Container(
+                            key: const ValueKey('chess_ai_card'),
+                            width: double.infinity,
+                            height: 92,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: Colors.black, width: 2.5),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'AI Opponent',
+                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'On-device minimax chess engine',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.black, width: 1.5),
+                                  ),
+                                  child: DropdownButton<AIDifficulty>(
+                                    value: _aiDifficulty,
+                                    underline: const SizedBox(),
+                                    icon: const Icon(Icons.arrow_drop_down, color: Colors.black),
+                                    dropdownColor: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black),
+                                    onChanged: (val) {
+                                      if (val != null) {
+                                        setState(() {
+                                          _aiDifficulty = val;
+                                          _startVsAIGame();
+                                        });
+                                      }
+                                    },
+                                    items: const [
+                                      DropdownMenuItem(
+                                        value: AIDifficulty.easy,
+                                        child: Text('Easy'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: AIDifficulty.medium,
+                                        child: Text('Medium'),
+                                      ),
+                                      DropdownMenuItem(
+                                        value: AIDifficulty.hard,
+                                        child: Text('Hard'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : Container(
+                            key: const ValueKey('chess_pass_card'),
+                            width: double.infinity,
+                            height: 92,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                              borderRadius: BorderRadius.circular(18),
+                              border: Border.all(color: Colors.black, width: 2.5),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: Colors.black, width: 1.5),
+                                  ),
+                                  child: const Icon(Icons.people_alt_rounded, size: 22, color: Colors.black),
+                                ),
+                                const SizedBox(width: 14),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Pass & Play',
+                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                                    ),
+                                    const SizedBox(height: 2),
+                                    Text(
+                                      'Play side-by-side on this device',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w700,
+                                        color: colors.onSurfaceVariant,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
               ),
+            ),
+            const SizedBox(height: 10),
 
-            if (_mode == ChessGameMode.vsAI)
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.black, width: 2.5),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                  ],
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'AI Difficulty:',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
+            // Top captured row (fixed 26px height - never collapses)
+            SizedBox(
+              height: 26,
+              child: Row(
+                children: [
+                  const Text('Captured: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900)),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _buildCapturedRow(_isFlipped),
                     ),
-                    DropdownButton<AIDifficulty>(
-                      value: _aiDifficulty,
-                      underline: const SizedBox(),
-                      style: const TextStyle(fontWeight: FontWeight.w900, color: Colors.black),
-                      onChanged: (val) {
-                        if (val != null) {
-                          setState(() {
-                            _aiDifficulty = val;
-                            _startVsAIGame();
-                          });
-                        }
-                      },
-                      items: const [
-                        DropdownMenuItem(
-                          value: AIDifficulty.easy,
-                          child: Text('Easy (Novice)'),
-                        ),
-                        DropdownMenuItem(
-                          value: AIDifficulty.medium,
-                          child: Text('Medium (Club)'),
-                        ),
-                        DropdownMenuItem(
-                          value: AIDifficulty.hard,
-                          child: Text('Hard (Master)'),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
+            ),
+            const SizedBox(height: 6),
 
-            const SizedBox(height: 12),
+            // Chess Board Widget (single AspectRatio(1.0), identical size and location across all modes)
+            AspectRatio(
+              aspectRatio: 1.0,
+              child: ChessBoardWidget(
+                game: _game,
+                selectedSquare: _selectedSquare,
+                validMoves: _validMoves,
+                lastMove: _lastMove,
+                isFlipped: _isFlipped,
+                onSquareTap: _onSquareTap,
+              ),
+            ),
+            const SizedBox(height: 6),
 
-            // Captured pieces top tray
-            Row(
-              children: [
-                const Text('Captured: ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-                Expanded(
-                  child: Text(
-                    _isFlipped ? _getCapturedWhiteText() : _getCapturedBlackText(),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+            // Bottom captured row (fixed 26px height - never collapses)
+            SizedBox(
+              height: 26,
+              child: Row(
+                children: [
+                  const Text('Captured: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900)),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: _buildCapturedRow(!_isFlipped),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 14),
 
-            // Chess Board Widget
-            ChessBoardWidget(
-              game: _game,
-              selectedSquare: _selectedSquare,
-              validMoves: _validMoves,
-              lastMove: _lastMove,
-              isFlipped: _isFlipped,
-              onSquareTap: _onSquareTap,
-            ),
-
-            const SizedBox(height: 8),
-            // Captured pieces bottom tray
-            Row(
-              children: [
-                const Text('Captured: ', style: TextStyle(fontSize: 13, fontWeight: FontWeight.w900)),
-                Expanded(
-                  child: Text(
-                    _isFlipped ? _getCapturedBlackText() : _getCapturedWhiteText(),
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 16),
-
-            // Bottom control actions
+            // Bottom control action buttons (fixed 4-slot row; Hint slot maintained when hidden)
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
@@ -642,8 +788,12 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                   },
                   colors: colors,
                 ),
-                if (_mode == ChessGameMode.dailyPuzzle)
-                  _buildNeoActionButton(
+                Visibility(
+                  visible: _mode == ChessGameMode.dailyPuzzle,
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: _buildNeoActionButton(
                     icon: Icons.lightbulb_outline_rounded,
                     tooltip: 'Show Hint',
                     onPressed: () {
@@ -657,6 +807,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                     },
                     colors: colors,
                   ),
+                ),
               ],
             ),
           ],

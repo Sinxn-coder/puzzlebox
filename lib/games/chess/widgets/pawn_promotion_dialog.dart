@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:chess/chess.dart' as chess_lib;
+import 'chess_piece_widget.dart';
 
 class PawnPromotionDialog extends StatelessWidget {
   final bool isWhite;
@@ -17,10 +19,10 @@ class PawnPromotionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final options = [
-      ('q', 'Queen', isWhite ? '♕' : '♛'),
-      ('r', 'Rook', isWhite ? '♖' : '♜'),
-      ('b', 'Bishop', isWhite ? '♗' : '♝'),
-      ('n', 'Knight', isWhite ? '♘' : '♞'),
+      ('q', 'Queen', chess_lib.PieceType.QUEEN),
+      ('r', 'Rook', chess_lib.PieceType.ROOK),
+      ('b', 'Bishop', chess_lib.PieceType.BISHOP),
+      ('n', 'Knight', chess_lib.PieceType.KNIGHT),
     ];
 
     return AlertDialog(
@@ -46,9 +48,10 @@ class PawnPromotionDialog extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    opt.$3,
-                    style: const TextStyle(fontSize: 36),
+                  ChessPieceWidget.fromType(
+                    type: opt.$3,
+                    isWhite: isWhite,
+                    size: 38,
                   ),
                   const SizedBox(height: 4),
                   Text(

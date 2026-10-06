@@ -348,16 +348,24 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
             ),
           ),
 
-          // Next Puzzle Button (Practice Mode / Victory)
-          if (shouldShowNextButton(_isSolved))
-            Padding(
-              padding: EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: ElevatedButton.icon(
-                icon: Icon(Icons.arrow_forward_rounded),
-                label: Text('Next Puzzle'),
-                onPressed: nextPuzzle,
+          // Next Puzzle Button (fixed slot)
+          Container(
+            height: 52,
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Center(
+              child: Visibility(
+                visible: shouldShowNextButton(_isSolved),
+                maintainSize: true,
+                maintainAnimation: true,
+                maintainState: true,
+                child: ElevatedButton.icon(
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  label: const Text('Next Puzzle'),
+                  onPressed: nextPuzzle,
+                ),
               ),
             ),
+          ),
         ],
       ),
     );

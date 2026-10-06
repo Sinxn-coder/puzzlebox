@@ -102,11 +102,6 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
           tooltip: 'Stats',
           onTap: () => _showResultModal(context),
         ),
-        AppBarIconButton(
-          icon: Icons.settings_outlined,
-          tooltip: 'Settings',
-          onTap: () => _showSettings(context),
-        ),
       ],
       body: Column(
         children: [
@@ -203,18 +198,6 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
       'Letter ${position + 1} is ${game.answer[position]}. Use it in your next guess.',
       icon: Icons.lightbulb_rounded,
       color: const Color(0xFFFACC15),
-    );
-  }
-
-  void _showSettings(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SettingsSheet(),
     );
   }
 }

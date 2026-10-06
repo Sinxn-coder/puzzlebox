@@ -38,5 +38,8 @@ String rulesFor(String title) {
   if (title.contains('Cages')) {
     return 'Fill the grid with 1 through the grid size so no number repeats in any row or column, exactly like a Latin square. Every outlined cage shows a target and an operation; the numbers inside that cage must combine, in some order, to reach it. Select a cell, then tap a number to place it. Undo restores your last move; Hint reveals one cell.';
   }
+  if (title.contains('Chess')) {
+    return 'Play classic chess against the AI, solve tactical mate-in-one or mate-in-two puzzles, or play pass-and-play with a friend. Drag and drop pieces or tap to move according to standard chess rules. Protect your king and checkmate the opponent!';
+  }
   return 'Choose any of the fifteen games. Unlimited play has no level cap, ads, payments or accounts. Daily challenges are separate from unlimited totals. Your progress and theme are stored on this device.';
 }

@@ -59,17 +59,15 @@ class NeoDifficultyBar extends StatelessWidget {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
                             color: Colors.black,
-                            width: isSelected ? 2.2 : 1.5,
+                            width: 2.0,
                           ),
-                          boxShadow: isSelected
-                              ? const [
-                                  BoxShadow(
-                                    color: Colors.black,
-                                    offset: Offset(2.5, 2.5),
-                                    blurRadius: 0,
-                                  ),
-                                ]
-                              : null,
+                          boxShadow: [
+                            BoxShadow(
+                              color: isSelected ? Colors.black : Colors.black45,
+                              offset: const Offset(2.0, 2.0),
+                              blurRadius: 0,
+                            ),
+                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,

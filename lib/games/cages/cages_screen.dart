@@ -384,17 +384,29 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
                     ),
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    OutlinedButton(onPressed: _erase, child: const Text('Erase')),
-                    if (shouldShowNextButton(_isSolved))
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.arrow_forward_rounded),
-                        label: const Text('Next Cages'),
-                        onPressed: nextPuzzle,
-                      ),
-                  ],
+                SizedBox(
+                  height: 44,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        OutlinedButton(onPressed: _erase, child: const Text('Erase')),
+                        const SizedBox(width: 12),
+                        Visibility(
+                          visible: shouldShowNextButton(_isSolved),
+                          maintainSize: true,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            label: const Text('Next Cages'),
+                            onPressed: nextPuzzle,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Padding(

@@ -336,18 +336,21 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (shouldShowNextButton(_isSolved))
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.arrow_forward_rounded),
-                          label: const Text('Next Nonogram'),
-                          onPressed: nextPuzzle,
-                        ),
-                    ],
+                Container(
+                  height: 52,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Center(
+                    child: Visibility(
+                      visible: shouldShowNextButton(_isSolved),
+                      maintainSize: true,
+                      maintainAnimation: true,
+                      maintainState: true,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.arrow_forward_rounded),
+                        label: const Text('Next Nonogram'),
+                        onPressed: nextPuzzle,
+                      ),
+                    ),
                   ),
                 ),
               ],
