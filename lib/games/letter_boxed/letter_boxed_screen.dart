@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/widgets/neo_toast.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
@@ -38,13 +39,14 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
 
   List<String> _solution = [];
   bool _loading = true;
+  bool _isGenerating = false;
   bool _generationFailed = false;
   int _request = 0;
   Set<String> get _dictionary => {...WordList.answers, ...clueBank.keys};
-  late List<String> _top;
-  late List<String> _right;
-  late List<String> _bottom;
-  late List<String> _left;
+  List<String>? _top;
+  List<String>? _right;
+  List<String>? _bottom;
+  List<String>? _left;
 
   String _currentWord = '';
   int? _lastSide;
@@ -76,8 +78,13 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
 
   Future<void> _loadBoxedPuzzle() async {
     final request = ++_request;
+    final isCold = _top == null;
     setState(() {
-      _loading = true;
+      if (isCold) {
+        _loading = true;
+      } else {
+        _isGenerating = true;
+      }
       _generationFailed = false;
     });
     try {
@@ -100,6 +107,7 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
         _completedWords.clear();
         _isSolved = false;
         _loading = false;
+        _isGenerating = false;
         if (difficulty == 'Easy') {
           _currentWord = _solution.first;
           _lastSide = _side(_currentWord[_currentWord.length - 1]);
@@ -108,7 +116,11 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
       });
     } catch (_) {
       if (mounted && request == _request) {
-        setState(() => _generationFailed = true);
+        setState(() {
+          _loading = false;
+          _isGenerating = false;
+          _generationFailed = true;
+        });
         showPuzzleHint('Could not prepare this box. Tap Next to try another.');
       }
     }
@@ -117,9 +129,9 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
   static BoxedPuzzle _makeBox((List<String>, int, int) input) =>
       generateBoxed(input.$1, input.$2, input.$3);
   int _side(String letter) =>
-      [_top, _right, _bottom, _left].indexWhere((s) => s.contains(letter));
+      [_top ?? [], _right ?? [], _bottom ?? [], _left ?? []].indexWhere((s) => s.contains(letter));
   void _hint() {
-    if (_loading) return;
+    if (_loading || _isGenerating) return;
     final next = _solution.firstWhere(
       (w) => !_completedWords.contains(w),
       orElse: () => _solution.first,
@@ -130,7 +142,7 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
   }
 
   void _onLetterTap(String letter, int side) {
-    if (_isSolved || _currentWord.length >= 24) return;
+    if (_isGenerating || _isSolved || _currentWord.length >= 24) return;
     if (_lastSide == side) {
       NeoToast.show(
         context,
@@ -227,7 +239,7 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
           tooltip: 'Hint',
         ),
       ],
-      body: _loading
+      body: (_loading && _top == null)
           ? Column(
               children: [
                 buildPracticeModeToggle(),
@@ -254,11 +266,12 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
           : Column(
               children: [
                 buildPracticeModeToggle(),
-                Divider(height: 1),
+                ThinGeneratingBar(isGenerating: _isGenerating),
+                const Divider(height: 1),
 
                 Expanded(
                   child: Padding(
-                    padding: EdgeInsets.all(16.0),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       children: [
                         // Used Letters Count Header
@@ -270,7 +283,7 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
                             color: Theme.of(context).colorScheme.primary,
                           ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
                         // Active Word Display
                         Container(
@@ -288,100 +301,103 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
                             ),
                           ),
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
 
                         // Square Box UI (Top, Left, Right, Bottom)
                         Expanded(
                           child: Center(
-                            child: FittedBox(
-                              child: SizedBox(
-                                width: 300,
-                                height: 300,
-                                child: AnimatedContainer(
-                                  duration:
-                                      MediaQuery.disableAnimationsOf(context)
-                                      ? Duration.zero
-                                      : const Duration(milliseconds: 160),
-                                  curve: Curves.easeOutCubic,
-                                  padding: EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
-                                    borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: Colors.black, width: 2.5),
-                                    boxShadow: const [
-                                      BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                                    ],
-                                  ),
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      // Top Side (Side 0)
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: _top
-                                            .map(
-                                              (l) => _SideLetter(
-                                                letter: l,
-                                                side: 0,
-                                                onTap: () => _onLetterTap(l, 0),
-                                              ),
-                                            )
-                                            .toList(),
-                                      ),
-                                      // Middle Row (Left Side 3 & Right Side 1)
-                                      Expanded(
-                                        child: Row(
+                            child: SmoothBoardTransition(
+                              keyId: 'boxed_${_top?.join()}_${_right?.join()}',
+                              child: FittedBox(
+                                child: SizedBox(
+                                  width: 300,
+                                  height: 300,
+                                  child: AnimatedContainer(
+                                    duration:
+                                        MediaQuery.disableAnimationsOf(context)
+                                        ? Duration.zero
+                                        : const Duration(milliseconds: 160),
+                                    curve: Curves.easeOutCubic,
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+                                      borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: Colors.black, width: 2.5),
+                                      boxShadow: const [
+                                        BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                                      ],
+                                    ),
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        // Top Side (Side 0)
+                                        Row(
                                           mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
-                                              children: _left
-                                                  .map(
-                                                    (l) => _SideLetter(
-                                                      letter: l,
-                                                      side: 3,
-                                                      onTap: () =>
-                                                          _onLetterTap(l, 3),
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                            ),
-                                            Column(
-                                              mainAxisAlignment:
-                                                  MainAxisAlignment.spaceEvenly,
-                                              children: _right
-                                                  .map(
-                                                    (l) => _SideLetter(
-                                                      letter: l,
-                                                      side: 1,
-                                                      onTap: () =>
-                                                          _onLetterTap(l, 1),
-                                                    ),
-                                                  )
-                                                  .toList(),
-                                            ),
-                                          ],
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: (_top ?? [])
+                                              .map(
+                                                (l) => _SideLetter(
+                                                  letter: l,
+                                                  side: 0,
+                                                  onTap: () => _onLetterTap(l, 0),
+                                                ),
+                                              )
+                                              .toList(),
                                         ),
-                                      ),
-                                      // Bottom Side (Side 2)
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceEvenly,
-                                        children: _bottom
-                                            .map(
-                                              (l) => _SideLetter(
-                                                letter: l,
-                                                side: 2,
-                                                onTap: () => _onLetterTap(l, 2),
+                                        // Middle Row (Left Side 3 & Right Side 1)
+                                        Expanded(
+                                          child: Row(
+                                            mainAxisAlignment:
+                                              MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.spaceEvenly,
+                                                children: (_left ?? [])
+                                                    .map(
+                                                      (l) => _SideLetter(
+                                                        letter: l,
+                                                        side: 3,
+                                                        onTap: () =>
+                                                            _onLetterTap(l, 3),
+                                                      ),
+                                                    )
+                                                    .toList(),
                                               ),
-                                            )
-                                            .toList(),
-                                      ),
-                                    ],
+                                              Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.spaceEvenly,
+                                                children: (_right ?? [])
+                                                    .map(
+                                                      (l) => _SideLetter(
+                                                        letter: l,
+                                                        side: 1,
+                                                        onTap: () =>
+                                                            _onLetterTap(l, 1),
+                                                      ),
+                                                    )
+                                                    .toList(),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        // Bottom Side (Side 2)
+                                        Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.spaceEvenly,
+                                          children: (_bottom ?? [])
+                                              .map(
+                                                (l) => _SideLetter(
+                                                  letter: l,
+                                                  side: 2,
+                                                  onTap: () => _onLetterTap(l, 2),
+                                                ),
+                                              )
+                                              .toList(),
+                                        ),
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ),

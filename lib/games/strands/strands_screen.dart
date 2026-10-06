@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/widgets/neo_toast.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
@@ -406,72 +407,79 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
           // Letter Grid
           Expanded(
             child: Center(
-              child: AspectRatio(
-                aspectRatio: 6 / 8,
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.black, width: 2.5),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                      ],
-                    ),
-                    clipBehavior: Clip.antiAlias,
-                    padding: const EdgeInsets.all(8),
-                    child: GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: _cols,
-                        crossAxisSpacing: 6,
-                        mainAxisSpacing: 6,
+              child: SmoothBoardTransition(
+                keyId: 'strands_${puzzleSeed()}_$difficulty',
+                child: AspectRatio(
+                  aspectRatio: 6 / 8,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.black, width: 2.5),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                        ],
                       ),
-                      itemCount: _rows * _cols,
-                      itemBuilder: (context, index) {
-                        final r = index ~/ _cols;
-                        final c = index % _cols;
-                        final letter = _currentTheme.grid[r][c];
+                      clipBehavior: Clip.antiAlias,
+                      padding: const EdgeInsets.all(8),
+                      child: GridView.builder(
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: _cols,
+                          crossAxisSpacing: 6,
+                          mainAxisSpacing: 6,
+                        ),
+                        itemCount: _rows * _cols,
+                        itemBuilder: (context, index) {
+                          final r = index ~/ _cols;
+                          final c = index % _cols;
+                          final letter = _currentTheme.grid[r][c];
 
-                        final isSelected = _selectedIndices.contains(index);
-                        final isFound = _foundIndices.contains(index);
-                        final isSpangram = _spangramIndices.contains(index);
+                          final isSelected = _selectedIndices.contains(index);
+                          final isFound = _foundIndices.contains(index);
+                          final isSpangram = _spangramIndices.contains(index);
 
-                        Color tileBg = isDark ? const Color(0xFF1E293B) : Colors.white;
+                          Color tileBg = isDark ? const Color(0xFF1E293B) : Colors.white;
 
-                        if (isSpangram) {
-                          tileBg = AppColors.spangram;
-                        } else if (isFound) {
-                          tileBg = Theme.of(context).colorScheme.primary;
-                        } else if (isSelected) {
-                          tileBg = Theme.of(context).colorScheme.primary.withValues(alpha: 0.4);
-                        }
+                          if (isSpangram) {
+                            tileBg = AppColors.spangram;
+                          } else if (isFound) {
+                            tileBg = Theme.of(context).colorScheme.primary;
+                          } else if (isSelected) {
+                            tileBg = Theme.of(context).colorScheme.primary.withValues(alpha: 0.4);
+                          }
 
-                        return GestureDetector(
-                          onTap: () => _onTileTap(index),
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 150),
-                            decoration: BoxDecoration(
-                              color: tileBg,
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.black, width: 2.0),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black, offset: Offset(1.5, 1.5), blurRadius: 0),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                letter,
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.black,
+                          return GestureDetector(
+                            onTap: () => _onTileTap(index),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 150),
+                              decoration: BoxDecoration(
+                                color: tileBg,
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(color: Colors.black, width: 2.0),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black, offset: Offset(1.5, 1.5), blurRadius: 0),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  letter,
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                    color: isSpangram
+                                        ? Colors.black
+                                        : (isFound
+                                            ? Theme.of(context).colorScheme.onPrimary
+                                            : (isDark ? Colors.white : Colors.black)),
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),

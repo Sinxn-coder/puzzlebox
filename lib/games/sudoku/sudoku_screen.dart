@@ -10,6 +10,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 
 class SudokuScreen extends ConsumerStatefulWidget {
   const SudokuScreen({super.key});
@@ -36,6 +37,7 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
 
   List<int> _solution = [];
   bool _loading = true;
+  bool _isGenerating = false;
   bool _generationFailed = false;
   int _request = 0;
   final List<(List<List<int>>, List<List<Set<int>>>)> _history = [];
@@ -71,7 +73,8 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
     final request = ++_request;
     _timer?.cancel();
     setState(() {
-      _loading = true;
+      _isGenerating = true;
+      if (_solution.isEmpty) _loading = true;
       _generationFailed = false;
     });
     try {
@@ -92,12 +95,16 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
         _selectedCol = 0;
         _pencilMode = false;
         _loading = false;
+        _isGenerating = false;
       });
       startSession();
       _startTimer();
     } catch (_) {
       if (mounted && request == _request) {
-        setState(() => _generationFailed = true);
+        setState(() {
+          _isGenerating = false;
+          if (_solution.isEmpty) _generationFailed = true;
+        });
         showPuzzleHint('Generation failed. Tap Next to retry.');
       }
     }
@@ -284,7 +291,7 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
           tooltip: 'Hint',
         ),
       ],
-      body: _loading
+      body: _solution.isEmpty
           ? Column(
               children: [
                 buildPracticeModeToggle(),
@@ -311,30 +318,33 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
           : Column(
               children: [
                 buildPracticeModeToggle(),
-                Divider(height: 1),
+                ThinGeneratingBar(isGenerating: _isGenerating),
+                const Divider(height: 1),
 
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: SizedBox(
-                      width: 380,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Unique solution',
-                            style: TextStyle(fontWeight: FontWeight.w700),
-                          ),
-                          Text(
-                            'Time $timerStr',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w900,
-                              color: Theme.of(context).colorScheme.primary,
-                              fontFeatures: const [FontFeature.tabularFigures()],
+                SizedBox(
+                  height: 38,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox(
+                        width: 380,
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Unique solution',
+                              style: TextStyle(fontWeight: FontWeight.w700),
                             ),
-                          ),
-                        ],
+                            TabularText(
+                              'Time $timerStr',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w900,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -347,16 +357,18 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                       aspectRatio: 1.0,
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.black, width: 2.5),
-                            boxShadow: const [
-                              BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                            ],
-                          ),
-                          clipBehavior: Clip.antiAlias,
+                        child: SmoothBoardTransition(
+                          keyId: 'sudoku_grid_${puzzleRequest.seed}_${_solution.length}',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.black, width: 2.5),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
                           child: GridView.builder(
                             physics: const NeverScrollableScrollPhysics(),
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -435,6 +447,7 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                     ),
                   ),
                 ),
+              ),
 
                 // Control Action Row
                 // Control Action Row (fixed button slots)

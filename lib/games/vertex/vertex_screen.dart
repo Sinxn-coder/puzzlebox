@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
 
@@ -280,67 +281,70 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
           ),
           // Canvas & Interactive Graph
           Expanded(
-            child: Container(
-              margin: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black, width: 2.5),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                ],
-              ),
-              child: FittedBox(
-                child: SizedBox(
-                  width: 320,
-                  height: 320,
-                  child: CustomPaint(
-                    painter: _VertexPainter(
-                      dots: _dots,
-                      connections: _userConnections,
-                      selectedId: _selectedDotId,
-                    ),
-                    child: Stack(
-                      children: _dots.map((dot) {
-                        final isSelected = _selectedDotId == dot.id;
-                        return Positioned(
-                          left: dot.pos.dx - 20,
-                          top: dot.pos.dy - 20,
-                          child: GestureDetector(
-                            key: ValueKey('vertex_dot_${dot.id}'),
-                            onTap: () => _onDotTap(dot.id),
-                            child: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? Theme.of(context).colorScheme.primary
-                                    : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.black, width: 2.2),
-                                boxShadow: const [
-                                  BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-                                ],
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${dot.targetConnections}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: isSelected
-                                        ? Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface
-                                        : Theme.of(
-                                            context,
-                                          ).colorScheme.onSurface,
+            child: SmoothBoardTransition(
+              keyId: 'vertex_${puzzleSeed()}_$difficulty',
+              child: Container(
+                margin: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.black, width: 2.5),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                  ],
+                ),
+                child: FittedBox(
+                  child: SizedBox(
+                    width: 320,
+                    height: 320,
+                    child: CustomPaint(
+                      painter: _VertexPainter(
+                        dots: _dots,
+                        connections: _userConnections,
+                        selectedId: _selectedDotId,
+                      ),
+                      child: Stack(
+                        children: _dots.map((dot) {
+                          final isSelected = _selectedDotId == dot.id;
+                          return Positioned(
+                            left: dot.pos.dx - 20,
+                            top: dot.pos.dy - 20,
+                            child: GestureDetector(
+                              key: ValueKey('vertex_dot_${dot.id}'),
+                              onTap: () => _onDotTap(dot.id),
+                              child: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? Theme.of(context).colorScheme.primary
+                                      : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.black, width: 2.2),
+                                  boxShadow: const [
+                                    BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                                  ],
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${dot.targetConnections}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: isSelected
+                                          ? Theme.of(
+                                              context,
+                                            ).colorScheme.onPrimary
+                                          : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
+                          );
+                        }).toList(),
+                      ),
                     ),
                   ),
                 ),

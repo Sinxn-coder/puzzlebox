@@ -8,11 +8,7 @@ class ChessPieceWidget extends StatelessWidget {
   final chess_lib.Piece? piece;
   final double size;
 
-  const ChessPieceWidget({
-    super.key,
-    required this.piece,
-    this.size = 34,
-  });
+  const ChessPieceWidget({super.key, required this.piece, this.size = 34});
 
   /// Factory helper for creating a piece from type and color
   factory ChessPieceWidget.fromType({
@@ -23,7 +19,10 @@ class ChessPieceWidget extends StatelessWidget {
   }) {
     return ChessPieceWidget(
       key: key,
-      piece: chess_lib.Piece(type, isWhite ? chess_lib.Color.WHITE : chess_lib.Color.BLACK),
+      piece: chess_lib.Piece(
+        type,
+        isWhite ? chess_lib.Color.WHITE : chess_lib.Color.BLACK,
+      ),
       size: size,
     );
   }

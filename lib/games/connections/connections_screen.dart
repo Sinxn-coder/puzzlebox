@@ -7,6 +7,7 @@ import '../../core/services/stats_service.dart';
 import '../../core/services/app_feedback_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/widgets/neo_toast.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
@@ -373,7 +374,9 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                   // 4x4 Grid of Remaining Words
                   if (_remainingWords.isNotEmpty)
                     Expanded(
-                      child: GridView.builder(
+                      child: SmoothBoardTransition(
+                        keyId: 'conn_${puzzleSeed()}_$difficulty',
+                        child: GridView.builder(
                         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                           crossAxisCount: 4,
                           crossAxisSpacing: 8,
@@ -404,10 +407,12 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                                 child: Text(
                                   word,
                                   textAlign: TextAlign.center,
-                                  style: const TextStyle(
+                                  style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w900,
-                                    color: Colors.black,
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.onPrimary
+                                        : (isDark ? Colors.white : Colors.black),
                                   ),
                                 ),
                               ),
@@ -416,6 +421,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                         },
                       ),
                     ),
+                  ),
 
                   // Mistakes remaining indicator (fixed height row)
                   SizedBox(

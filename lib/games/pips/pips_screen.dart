@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/services/app_feedback_service.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/widgets/neo_toast.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
@@ -480,10 +481,11 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
                     );
                     final boardWidth = cellSize * _cols;
                     final boardHeight = cellSize * _rows;
-
-                    return Container(
-                      width: boardWidth,
-                      height: boardHeight,
+                    return SmoothBoardTransition(
+                      keyId: 'pips_${puzzleSeed()}_$difficulty',
+                      child: Container(
+                        width: boardWidth,
+                        height: boardHeight,
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: BorderRadius.circular(18),
@@ -577,7 +579,8 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
                           ],
                         ),
                       ),
-                    );
+                    ),
+                  );
                   },
                 ),
               ),
