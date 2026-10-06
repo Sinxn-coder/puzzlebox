@@ -157,8 +157,9 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
               won: true,
               isPractice: mode == GameMode.practice,
             );
+        if (!mounted || generation != _generation) return;
         ref.read(engagementRevisionProvider.notifier).state++;
-        if (mounted) showCelebrationBurst(context);
+        showCelebrationBurst(context);
       }
       if (!mounted || generation != _generation) return;
       await ref.read(puzzleProgressionProvider).advance(_progressionKey);

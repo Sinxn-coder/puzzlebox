@@ -1,9 +1,11 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/widgets/neo_toast.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
@@ -107,6 +109,14 @@ class _TilesScreenState extends ConsumerState<TilesScreen>
                   );
             } else if (mode == GameMode.practice) {
               recordPracticeWin();
+              Future.delayed(const Duration(milliseconds: 500), () {
+                if (mounted) {
+                  setState(() {
+                    _roundCount++;
+                    _loadTiles();
+                  });
+                }
+              });
             }
 
             NeoToast.show(
@@ -206,36 +216,46 @@ class _TilesScreenState extends ConsumerState<TilesScreen>
             child: Column(
               children: [
                 // Score, Chain & Round Banner
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 4,
-                  alignment: WrapAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Round $_roundCount',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.primary,
+                SizedBox(
+                  height: 32,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: SizedBox(
+                      width: 500,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Round $_roundCount',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.primary,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                          Text(
+                            'Score: $_score',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                          Text(
+                            'Combo: 🔥 ${_comboChain}x',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.present,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    Text(
-                      'Score: $_score',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Theme.of(context).colorScheme.onSurface,
-                      ),
-                    ),
-                    Text(
-                      'Combo: 🔥 ${_comboChain}x',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.present,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ],
             ),
@@ -244,68 +264,66 @@ class _TilesScreenState extends ConsumerState<TilesScreen>
           // Tiles Grid
           Expanded(
             child: Padding(
-              padding: EdgeInsets.all(16.0),
-              child: _tiles.isNotEmpty
-                  ? GridView.builder(
-                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount: 3,
-                        crossAxisSpacing: 12,
-                        mainAxisSpacing: 12,
-                      ),
-                      itemCount: _tiles.length,
-                      itemBuilder: (context, index) {
-                        final tile = _tiles[index];
-                        final isSelected = _firstSelected?.id == tile.id;
+              padding: const EdgeInsets.all(16.0),
+              child: SmoothBoardTransition(
+                keyId: 'tiles_${_roundCount}_$difficulty',
+                child: _tiles.isNotEmpty
+                    ? GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 3,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: _tiles.length,
+                        itemBuilder: (context, index) {
+                          final tile = _tiles[index];
+                          final isSelected = _firstSelected?.id == tile.id;
 
-                        return GestureDetector(
-                          onTap: () => _onTileTap(tile),
-                          child: AnimatedContainer(
-                            duration: MediaQuery.disableAnimationsOf(context)
-                                ? Duration.zero
-                                : const Duration(milliseconds: 160),
-                            curve: Curves.easeOutCubic,
-                            decoration: BoxDecoration(
-                              color: isSelected
-                                  ? Theme.of(context).colorScheme.primary
-                                  : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.black, width: 2.5),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                tile.shape,
-                                style: TextStyle(
-                                  fontSize: 32,
-                                  color: isSelected
-                                      ? Theme.of(context).colorScheme.onPrimary
-                                      : Theme.of(context).colorScheme.onSurface,
+                          return GestureDetector(
+                            onTap: () => _onTileTap(tile),
+                            child: AnimatedContainer(
+                              duration: MediaQuery.disableAnimationsOf(context)
+                                  ? Duration.zero
+                                  : const Duration(milliseconds: 160),
+                              curve: Curves.easeOutCubic,
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? Theme.of(context).colorScheme.primary
+                                    : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.black, width: 2.5),
+                                boxShadow: const [
+                                  BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
+                                ],
+                              ),
+                              child: Center(
+                                child: Text(
+                                  tile.shape,
+                                  style: TextStyle(
+                                    fontSize: 32,
+                                    color: isSelected
+                                        ? Theme.of(context).colorScheme.onPrimary
+                                        : Theme.of(context).colorScheme.onSurface,
+                                  ),
                                 ),
                               ),
                             ),
+                          );
+                        },
+                      )
+                    : Center(
+                        child: Text(
+                          'Round $_roundCount Complete!',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.primary,
                           ),
-                        );
-                      },
-                    )
-                  : Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          CircularProgressIndicator(),
-                          SizedBox(height: 16),
-                          Text(
-                            'Preparing Next Round...',
-                            style: TextStyle(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
-                    ),
+              ),
             ),
           ),
         ],

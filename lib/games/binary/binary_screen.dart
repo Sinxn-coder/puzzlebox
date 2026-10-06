@@ -8,6 +8,7 @@ import '../../core/services/app_feedback_service.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 
 class BinaryScreen extends ConsumerStatefulWidget {
   const BinaryScreen({super.key});
@@ -24,6 +25,7 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
   List<int> _user = [];
   final List<List<int>> _history = [];
   bool _loading = true;
+  bool _isGenerating = false;
   bool _generationFailed = false;
   bool _isSolved = false;
   int _request = 0;
@@ -45,7 +47,8 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
   Future<void> _loadPuzzle() async {
     final request = ++_request;
     setState(() {
-      _loading = true;
+      _isGenerating = true;
+      if (_puzzle == null) _loading = true;
       _generationFailed = false;
     });
     try {
@@ -57,11 +60,15 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
         _history.clear();
         _isSolved = false;
         _loading = false;
+        _isGenerating = false;
       });
       startSession();
     } catch (_) {
       if (mounted && request == _request) {
-        setState(() => _generationFailed = true);
+        setState(() {
+          _isGenerating = false;
+          if (_puzzle == null) _generationFailed = true;
+        });
         showPuzzleHint('Generation failed. Tap Next to retry.');
       }
     }
@@ -70,13 +77,13 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
   void _remember() => _history.add(List<int>.of(_user));
 
   void _undo() {
-    if (_history.isEmpty || _isSolved) return;
+    if (_history.isEmpty || _isSolved || _isGenerating) return;
     setState(() => _user = _history.removeLast());
   }
 
   void _onCellTap(int index) {
     final puzzle = _puzzle;
-    if (_isSolved || puzzle == null || puzzle.givens[index] != -1) return;
+    if (_isSolved || _isGenerating || puzzle == null || puzzle.givens[index] != -1) return;
     AppFeedbackService.tap(ref);
     _remember();
     setState(() {
@@ -210,7 +217,7 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
           tooltip: 'Hint',
         ),
       ],
-      body: _loading
+      body: _puzzle == null
           ? Column(
               children: [
                 buildPracticeModeToggle(),
@@ -237,30 +244,33 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
           : Column(
               children: [
                 buildPracticeModeToggle(),
+                ThinGeneratingBar(isGenerating: _isGenerating),
                 const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Equal 0s and 1s · no triples · no twins',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (_isSolved)
-                        Text(
-                          'Solved!',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: colors.primary,
+                SizedBox(
+                  height: 38,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Equal 0s and 1s · no triples · no twins',
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                    ],
+                        if (_isSolved)
+                          Text(
+                            'Solved!',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: colors.primary,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -270,16 +280,18 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
                       aspectRatio: 1,
                       child: Padding(
                         padding: const EdgeInsets.all(12),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.black, width: 2.5),
-                            boxShadow: const [
-                              BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                            ],
-                          ),
-                          clipBehavior: Clip.antiAlias,
+                        child: SmoothBoardTransition(
+                          keyId: 'binary_grid_${puzzleSeed()}_${_puzzle!.size}',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.black, width: 2.5),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                              ],
+                            ),
+                            clipBehavior: Clip.antiAlias,
                           child: GridView.builder(
                             physics: const NeverScrollableScrollPhysics(),
                             gridDelegate:
@@ -351,18 +363,22 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (shouldShowNextButton(_isSolved))
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.arrow_forward_rounded),
-                          label: const Text('Next Binary'),
-                          onPressed: nextPuzzle,
-                        ),
-                    ],
+              ),
+                Container(
+                  height: 52,
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                  child: Center(
+                    child: Visibility(
+                      visible: shouldShowNextButton(_isSolved),
+                      maintainSize: true,
+                      maintainAnimation: true,
+                      maintainState: true,
+                      child: ElevatedButton.icon(
+                        icon: const Icon(Icons.arrow_forward_rounded),
+                        label: const Text('Next Binary'),
+                        onPressed: nextPuzzle,
+                      ),
+                    ),
                   ),
                 ),
               ],

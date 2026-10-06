@@ -8,6 +8,7 @@ import '../../core/services/app_feedback_service.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 
 const _cageAccents = [
   Color(0xFF2458A6),
@@ -37,6 +38,7 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
   int? _selected;
   final List<List<int>> _history = [];
   bool _loading = true;
+  bool _isGenerating = false;
   bool _generationFailed = false;
   bool _isSolved = false;
   int _request = 0;
@@ -58,7 +60,8 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
   Future<void> _loadPuzzle() async {
     final request = ++_request;
     setState(() {
-      _loading = true;
+      _isGenerating = true;
+      if (_puzzle == null) _loading = true;
       _generationFailed = false;
     });
     try {
@@ -78,11 +81,15 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
         _history.clear();
         _isSolved = false;
         _loading = false;
+        _isGenerating = false;
       });
       startSession();
     } catch (_) {
       if (mounted && request == _request) {
-        setState(() => _generationFailed = true);
+        setState(() {
+          _isGenerating = false;
+          if (_puzzle == null) _generationFailed = true;
+        });
         showPuzzleHint('Generation failed. Tap Next to retry.');
       }
     }
@@ -91,18 +98,18 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
   void _remember() => _history.add(List<int>.of(_user));
 
   void _undo() {
-    if (_history.isEmpty || _isSolved) return;
+    if (_history.isEmpty || _isSolved || _isGenerating) return;
     setState(() => _user = _history.removeLast());
   }
 
   void _onCellTap(int index) {
-    if (_isSolved) return;
+    if (_isSolved || _isGenerating) return;
     AppFeedbackService.tap(ref);
     setState(() => _selected = index);
   }
 
   void _onNumberTap(int value) {
-    if (_isSolved || _selected == null) return;
+    if (_isSolved || _selected == null || _isGenerating) return;
     AppFeedbackService.tap(ref);
     _remember();
     setState(() {
@@ -112,7 +119,7 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
   }
 
   void _erase() {
-    if (_isSolved || _selected == null || _user[_selected!] == 0) return;
+    if (_isSolved || _selected == null || _user[_selected!] == 0 || _isGenerating) return;
     AppFeedbackService.tap(ref);
     _remember();
     setState(() => _user[_selected!] = 0);
@@ -209,7 +216,7 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
           tooltip: 'Hint',
         ),
       ],
-      body: _loading
+      body: _puzzle == null
           ? Column(
               children: [
                 buildPracticeModeToggle(),
@@ -236,30 +243,33 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
           : Column(
               children: [
                 buildPracticeModeToggle(),
+                ThinGeneratingBar(isGenerating: _isGenerating),
                 const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'No repeats in any row or column',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (_isSolved)
-                        Text(
-                          'Solved!',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: colors.primary,
+                SizedBox(
+                  height: 38,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'No repeats in any row or column',
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                    ],
+                        if (_isSolved)
+                          Text(
+                            'Solved!',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: colors.primary,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
@@ -269,160 +279,178 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
                       aspectRatio: 1,
                       child: Padding(
                         padding: const EdgeInsets.all(12),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.black, width: 2.5),
-                            boxShadow: const [
-                              BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                            ],
-                          ),
-                          clipBehavior: Clip.antiAlias,
-                          child: GridView.builder(
-                            physics: const NeverScrollableScrollPhysics(),
-                            gridDelegate:
-                                SliverGridDelegateWithFixedCrossAxisCount(
-                              crossAxisCount: _puzzle!.size,
+                        child: SmoothBoardTransition(
+                          keyId: 'cages_grid_${_puzzle!.size}_$difficulty',
+                          child: Container(
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: Colors.black, width: 2.5),
+                              boxShadow: const [
+                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                              ],
                             ),
-                            itemCount: _puzzle!.size * _puzzle!.size,
-                            itemBuilder: (context, index) {
-                              final puzzle = _puzzle!;
-                              final n = puzzle.size;
-                              final r = index ~/ n, c = index % n;
-                              final cageId = _cageOf[index];
-                              final cage = puzzle.cages[cageId];
-                              final accent =
-                                  _cageAccents[cageId % _cageAccents.length];
-                              final isLabelCell =
-                                  cage.cells.reduce((a, b) => a < b ? a : b) ==
-                                  index;
-                              final neighborRight =
-                                  c + 1 < n ? _cageOf[r * n + c + 1] : -1;
-                              final neighborBottom =
-                                  r + 1 < n ? _cageOf[(r + 1) * n + c] : -1;
-                              final isSelected = _selected == index;
-                              final isConflict = _hasConflict(index);
-                              final isCageBad = _cageMismatch(cageId);
-                              return GestureDetector(
-                                key: ValueKey('cages_${r}_$c'),
-                                onTap: () => _onCellTap(index),
-                                child: Container(
-                                  margin: const EdgeInsets.all(1),
-                                  decoration: BoxDecoration(
-                                    color: isSelected
-                                        ? colors.primary.withValues(alpha: 0.35)
-                                        : (isConflict || isCageBad)
-                                        ? colors.errorContainer
-                                        : Colors.transparent,
-                                    border: Border(
-                                      right: BorderSide(
-                                        color: neighborRight != cageId
-                                            ? Colors.black
-                                            : Colors.black38,
-                                        width: neighborRight != cageId ? 2.5 : .5,
-                                      ),
-                                      bottom: BorderSide(
-                                        color: neighborBottom != cageId
-                                            ? Colors.black
-                                            : Colors.black38,
-                                        width: neighborBottom != cageId
-                                            ? 2.5
-                                            : .5,
-                                      ),
-                                      left: BorderSide(
-                                        color: c == 0
-                                            ? Colors.black
-                                            : Colors.black38,
-                                        width: c == 0 ? 2.5 : .5,
-                                      ),
-                                      top: BorderSide(
-                                        color: r == 0
-                                            ? Colors.black
-                                            : Colors.black38,
-                                        width: r == 0 ? 2.5 : .5,
-                                      ),
-                                    ),
-                                  ),
-                                  child: Stack(
-                                  children: [
-                                    if (isLabelCell)
-                                      Positioned(
-                                        top: 2,
-                                        left: 4,
-                                        child: Text(
-                                          _cageLabel(cage),
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.w800,
-                                            color: accent,
-                                          ),
+                            clipBehavior: Clip.antiAlias,
+                            child: GridView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate:
+                                  SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: _puzzle!.size,
+                              ),
+                              itemCount: _puzzle!.size * _puzzle!.size,
+                              itemBuilder: (context, index) {
+                                final puzzle = _puzzle!;
+                                final n = puzzle.size;
+                                final r = index ~/ n, c = index % n;
+                                final cageId = _cageOf[index];
+                                final cage = puzzle.cages[cageId];
+                                final accent =
+                                    _cageAccents[cageId % _cageAccents.length];
+                                final isLabelCell =
+                                    cage.cells.reduce((a, b) => a < b ? a : b) ==
+                                    index;
+                                final neighborRight =
+                                    c + 1 < n ? _cageOf[r * n + c + 1] : -1;
+                                final neighborBottom =
+                                    r + 1 < n ? _cageOf[(r + 1) * n + c] : -1;
+                                final isSelected = _selected == index;
+                                final isConflict = _hasConflict(index);
+                                final isCageBad = _cageMismatch(cageId);
+                                return GestureDetector(
+                                  key: ValueKey('cages_${r}_$c'),
+                                  onTap: () => _onCellTap(index),
+                                  child: Container(
+                                    margin: const EdgeInsets.all(1),
+                                    decoration: BoxDecoration(
+                                      color: isSelected
+                                          ? colors.primary.withValues(alpha: 0.35)
+                                          : (isConflict || isCageBad)
+                                          ? colors.errorContainer
+                                          : Colors.transparent,
+                                      border: Border(
+                                        right: BorderSide(
+                                          color: neighborRight != cageId
+                                              ? Colors.black
+                                              : Colors.black38,
+                                          width: neighborRight != cageId ? 2.5 : .5,
+                                        ),
+                                        bottom: BorderSide(
+                                          color: neighborBottom != cageId
+                                              ? Colors.black
+                                              : Colors.black38,
+                                          width: neighborBottom != cageId
+                                              ? 2.5
+                                              : .5,
+                                        ),
+                                        left: BorderSide(
+                                          color: c == 0
+                                              ? Colors.black
+                                              : Colors.black38,
+                                          width: c == 0 ? 2.5 : .5,
+                                        ),
+                                        top: BorderSide(
+                                          color: r == 0
+                                              ? Colors.black
+                                              : Colors.black38,
+                                          width: r == 0 ? 2.5 : .5,
                                         ),
                                       ),
-                                    Center(
-                                      child: _user[index] == 0
-                                          ? null
-                                          : Text(
-                                              '${_user[index]}',
-                                              style: TextStyle(
-                                                fontSize: 20,
-                                                fontWeight: FontWeight.w800,
-                                                color: (isConflict || isCageBad)
-                                                    ? AppColors.error
-                                                    : colors.onSurface,
-                                              ),
-                                            ),
                                     ),
-                                  ],
+                                    child: Stack(
+                                    children: [
+                                      if (isLabelCell)
+                                        Positioned(
+                                          top: 2,
+                                          left: 4,
+                                          child: Text(
+                                            _cageLabel(cage),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              color: accent,
+                                            ),
+                                          ),
+                                        ),
+                                      Center(
+                                        child: _user[index] == 0
+                                            ? null
+                                            : Text(
+                                                '${_user[index]}',
+                                                style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: (isConflict || isCageBad)
+                                                      ? AppColors.error
+                                                      : colors.onSurface,
+                                                ),
+                                              ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                              ),
-                            );
-                            },
+                              );
+                              },
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    OutlinedButton(onPressed: _erase, child: const Text('Erase')),
-                    if (shouldShowNextButton(_isSolved))
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.arrow_forward_rounded),
-                        label: const Text('Next Cages'),
-                        onPressed: nextPuzzle,
-                      ),
-                  ],
+                SizedBox(
+                  height: 44,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        OutlinedButton(onPressed: _erase, child: const Text('Erase')),
+                        const SizedBox(width: 12),
+                        Visibility(
+                          visible: shouldShowNextButton(_isSolved),
+                          maintainSize: true,
+                          maintainAnimation: true,
+                          maintainState: true,
+                          child: ElevatedButton.icon(
+                            icon: const Icon(Icons.arrow_forward_rounded),
+                            label: const Text('Next Cages'),
+                            onPressed: nextPuzzle,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
                 const SizedBox(height: 12),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: List.generate(
-                      _puzzle!.size,
-                      (i) => Expanded(
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 3),
-                          child: InkWell(
-                            key: ValueKey('cages_number_${i + 1}'),
-                            onTap: () => _onNumberTap(i + 1),
-                            child: Container(
-                              height: 44,
-                              decoration: BoxDecoration(
-                                color: colors.surfaceContainerLow,
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: colors.outlineVariant),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  '${i + 1}',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: colors.onSurface,
+                SizedBox(
+                  height: 48,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(
+                        _puzzle!.size,
+                        (i) => Expanded(
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 3),
+                            child: InkWell(
+                              key: ValueKey('cages_number_${i + 1}'),
+                              onTap: () => _onNumberTap(i + 1),
+                              child: Container(
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: colors.surfaceContainerLow,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: colors.outlineVariant),
+                                ),
+                                child: Center(
+                                  child: Text(
+                                    '${i + 1}',
+                                    style: TextStyle(
+                                      fontSize: 18,
+                                      fontWeight: FontWeight.bold,
+                                      color: colors.onSurface,
+                                    ),
                                   ),
                                 ),
                               ),

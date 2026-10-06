@@ -1,9 +1,12 @@
 import 'dart:async';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
+import '../../core/widgets/unified_keyboard.dart';
 import '../../core/services/stats_service.dart';
 import 'crossword_generator.dart';
 
@@ -80,12 +83,12 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
     }
     setState(() => _solved = true);
     _timer?.cancel();
-    if (mode == GameMode.daily) {
+    if (mounted && mode == GameMode.daily) {
       ref
           .read(statsServiceProvider)
           .recordResult(gameType: gameType, todayKey: dailyDateKey, won: true);
     }
-    finishPuzzle();
+    if (mounted) finishPuzzle();
   }
 
   @override
@@ -115,29 +118,32 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
         children: [
           buildPracticeModeToggle(),
           Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     '${_puzzle.entries.length} clues · ${_seconds ~/ 60}:${(_seconds % 60).toString().padLeft(2, "0")}',
+                    style: const TextStyle(
+                      fontFeatures: [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
                 IconButton(
                   tooltip: 'Undo',
-                  icon: Icon(Icons.undo),
+                  icon: const Icon(Icons.undo),
                   onPressed: _history.isEmpty || _solved
                       ? null
                       : () => setState(() => _letters = _history.removeLast()),
                 ),
                 IconButton(
                   tooltip: 'Check letters',
-                  icon: Icon(Icons.fact_check_outlined),
+                  icon: const Icon(Icons.fact_check_outlined),
                   onPressed: () => setState(() => _checked = !_checked),
                 ),
                 IconButton(
                   tooltip: 'Reveal selected letter',
-                  icon: Icon(Icons.lightbulb_outline),
+                  icon: const Icon(Icons.lightbulb_outline),
                   onPressed: () {
                     showPuzzleHint(
                       '${_entry.clue}: selected letter is ${_puzzle.solution[_selected]}.',
@@ -150,73 +156,78 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
           ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              decoration: BoxDecoration(
-                color: Theme.of(context).brightness == Brightness.dark
-                    ? const Color(0xFF1E293B)
-                    : Colors.white,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.black, width: 2.2),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                ],
-              ),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<CrosswordEntry>(
-                  value: _entry,
-                  isExpanded: true,
-                  dropdownColor: Theme.of(context).brightness == Brightness.dark
+            child: SizedBox(
+              height: 52,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).brightness == Brightness.dark
                       ? const Color(0xFF1E293B)
                       : Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.black),
-                  style: TextStyle(
-                    fontFamily: 'PuzzleSans',
-                    fontWeight: FontWeight.w800,
-                    fontSize: 13.5,
-                    color: Theme.of(context).brightness == Brightness.dark
-                        ? Colors.white
-                        : Colors.black,
-                  ),
-                  items: _puzzle.entries
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(
-                            '${e.number}${e.across ? "A" : "D"}. ${e.clue} (${e.answer.length})',
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                  border: Border.all(color: Colors.black, width: 2.2),
+                  boxShadow: const [
+                    BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
+                  ],
+                ),
+                child: DropdownButtonHideUnderline(
+                  child: DropdownButton<CrosswordEntry>(
+                    value: _entry,
+                    isExpanded: true,
+                    dropdownColor: Theme.of(context).brightness == Brightness.dark
+                        ? const Color(0xFF1E293B)
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(14),
+                    icon: const Icon(Icons.arrow_drop_down_rounded, color: Colors.black),
+                    style: TextStyle(
+                      fontFamily: 'PuzzleSans',
+                      fontWeight: FontWeight.w800,
+                      fontSize: 13.5,
+                      color: Theme.of(context).brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.black,
+                    ),
+                    items: _puzzle.entries
+                        .map(
+                          (e) => DropdownMenuItem(
+                            value: e,
+                            child: Text(
+                              '${e.number}${e.across ? "A" : "D"}. ${e.clue} (${e.answer.length})',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                        ),
-                      )
-                      .toList(),
-                  onChanged: (e) {
-                    if (e != null) {
-                      setState(() {
-                        _entry = e;
-                        _selected = e.cells(_puzzle.size).first;
-                      });
-                    }
-                  },
+                        )
+                        .toList(),
+                    onChanged: (e) {
+                      if (e != null) {
+                        setState(() {
+                          _entry = e;
+                          _selected = e.cells(_puzzle.size).first;
+                        });
+                      }
+                    },
+                  ),
                 ),
               ),
             ),
           ),
           Expanded(
             child: Center(
-              child: AspectRatio(
-                aspectRatio: _puzzle.size / (_letters.length ~/ _puzzle.size),
-                child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Container(
-                  decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.black, width: 2.5),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                    ],
+              child: SmoothBoardTransition(
+                keyId: 'cw_${_puzzle.size}_$difficulty',
+                child: AspectRatio(
+                  aspectRatio: _puzzle.size / (_letters.length ~/ _puzzle.size),
+                  child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.black, width: 2.5),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+                      ],
                   ),
                   clipBehavior: Clip.antiAlias,
                   padding: const EdgeInsets.all(6),
@@ -298,46 +309,27 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
                         ),
                       );
                     },
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
-        ),
-          for (final row in ['QWERTYUIOP', 'ASDFGHJKL', 'ZXCVBNM'])
-            Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              child: Row(
-                children: [
-                  for (final letter in row.split(''))
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 1),
-                        child: SizedBox(
-                          height: 44,
-                          child: FilledButton.tonal(
-                            style: FilledButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                            ),
-                            onPressed: _solved ? null : () => _key(letter),
-                            child: Text(letter),
-                          ),
-                        ),
-                      ),
-                    ),
-                  if (row == 'ZXCVBNM')
-                    IconButton(
-                      onPressed: () => _key(''),
-                      tooltip: 'Erase',
-                      icon: Icon(Icons.backspace_outlined),
-                    ),
-                ],
-              ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: UnifiedKeyboard(
+              showEnter: false,
+              enabled: !_solved,
+              onKeyTap: (key) {
+                if (key == '⌫') {
+                  _key('');
+                } else {
+                  _key(key);
+                }
+              },
             ),
-          SizedBox(height: 8),
+          ),
         ],
       ),
     );

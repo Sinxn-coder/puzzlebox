@@ -1,9 +1,11 @@
 import 'dart:math';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/services/app_feedback_service.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/widgets/neo_toast.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
@@ -479,10 +481,11 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
                     );
                     final boardWidth = cellSize * _cols;
                     final boardHeight = cellSize * _rows;
-
-                    return Container(
-                      width: boardWidth,
-                      height: boardHeight,
+                    return SmoothBoardTransition(
+                      keyId: 'pips_${puzzleSeed()}_$difficulty',
+                      child: Container(
+                        width: boardWidth,
+                        height: boardHeight,
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: BorderRadius.circular(18),
@@ -576,7 +579,8 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
                           ],
                         ),
                       ),
-                    );
+                    ),
+                  );
                   },
                 ),
               ),
@@ -586,36 +590,53 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
           // Controls & Tray Bar
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
-            child: Row(
-              children: [
-                Text(
-                  'Tray (${_tray.length} left)',
-                  style: TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w900,
-                    color: theme.colorScheme.onSurface,
+            child: SizedBox(
+              height: 36,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: SizedBox(
+                  width: 360,
+                  child: Row(
+                    children: [
+                      Text(
+                        'Tray (${_tray.length} left)',
+                        style: TextStyle(
+                          fontSize: 13.5,
+                          fontWeight: FontWeight.w900,
+                          color: theme.colorScheme.onSurface,
+                          fontFeatures: const [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      const Spacer(),
+                      Visibility(
+                        visible: _selectedTrayDomino != null,
+                        maintainSize: true,
+                        maintainAnimation: true,
+                        maintainState: true,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            minimumSize: Size.zero,
+                          ),
+                          icon: const Icon(Icons.rotate_right_rounded, size: 16),
+                          label: Text(
+                            _selectedTrayDomino?.isVertical == true ? 'Vertical' : 'Horizontal',
+                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                          ),
+                          onPressed: () {
+                            if (_selectedTrayDomino == null) return;
+                            AppFeedbackService.tap(ref);
+                            setState(() {
+                              _selectedTrayDomino!.isVertical = !_selectedTrayDomino!.isVertical;
+                            });
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                const Spacer(),
-                if (_selectedTrayDomino != null)
-                  ElevatedButton.icon(
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      minimumSize: Size.zero,
-                    ),
-                    icon: const Icon(Icons.rotate_right_rounded, size: 16),
-                    label: Text(
-                      _selectedTrayDomino!.isVertical ? 'Vertical' : 'Horizontal',
-                      style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
-                    ),
-                    onPressed: () {
-                      AppFeedbackService.tap(ref);
-                      setState(() {
-                        _selectedTrayDomino!.isVertical = !_selectedTrayDomino!.isVertical;
-                      });
-                    },
-                  ),
-              ],
+              ),
             ),
           ),
 

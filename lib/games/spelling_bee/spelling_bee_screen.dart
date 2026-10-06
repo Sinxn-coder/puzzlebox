@@ -1,3 +1,4 @@
+import 'dart:ui';
 import '../daily_five/logic/word_list.dart';
 import '../../core/services/puzzle_content.dart';
 import 'dart:math';
@@ -6,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/services/app_feedback_service.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/widgets/neo_toast.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
@@ -277,10 +279,11 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                           const SizedBox(width: 12),
                           Text(
                             'Score: $_score',
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontWeight: FontWeight.w900,
                               fontSize: 16,
-                              color: Colors.black,
+                              color: Theme.of(context).colorScheme.onSurface,
+                              fontFeatures: const [FontFeature.tabularFigures()],
                             ),
                           ),
                         ],
@@ -299,11 +302,11 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                     ),
                     child: Text(
                       _currentInput,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 26,
                         fontWeight: FontWeight.w900,
                         letterSpacing: 4,
-                        color: Colors.black,
+                        color: Theme.of(context).colorScheme.onSurface,
                       ),
                     ),
                   ),
@@ -311,8 +314,10 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                   // Honeycomb 7-Letter View
                   Expanded(
                     child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
+                      child: SmoothBoardTransition(
+                        keyId: 'bee_${_centerLetter}_${_outerLetters.join()}',
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
@@ -371,8 +376,11 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                       ),
                     ),
                   ),
+                ),
                   LayoutBuilder(
                     builder: (context, constraints) {
+                      final isDark = Theme.of(context).brightness == Brightness.dark;
+                      final colors = Theme.of(context).colorScheme;
                       return SizedBox(
                         width: constraints.maxWidth,
                         child: FittedBox(
@@ -387,12 +395,19 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+                                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(color: Colors.black, width: 2.2),
                                       boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
                                     ),
-                                    child: const Text('Delete', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                                    child: Text(
+                                      'Delete',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13,
+                                        color: isDark ? Colors.white : Colors.black,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -402,12 +417,12 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                                     width: 44,
                                     height: 44,
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
+                                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(color: Colors.black, width: 2.2),
                                       boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
                                     ),
-                                    child: const Icon(Icons.refresh, color: Colors.black),
+                                    child: Icon(Icons.refresh, color: isDark ? Colors.white : Colors.black),
                                   ),
                                 ),
                                 const SizedBox(width: 12),
@@ -416,12 +431,19 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                     decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary,
+                                      color: colors.primary,
                                       borderRadius: BorderRadius.circular(14),
                                       border: Border.all(color: Colors.black, width: 2.2),
                                       boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
                                     ),
-                                    child: const Text('Enter', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                                    child: Text(
+                                      'Enter',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13,
+                                        color: colors.onPrimary,
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -494,10 +516,12 @@ class _BeeTile extends StatelessWidget {
         child: Center(
           child: Text(
             letter,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.w900,
-              color: Colors.black,
+              color: isCenter
+                  ? colors.onPrimary
+                  : (isDark ? Colors.white : Colors.black),
             ),
           ),
         ),

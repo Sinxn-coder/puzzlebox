@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:chess/chess.dart' as chess_lib;
+import 'chess_piece_widget.dart';
 
 class ChessBoardWidget extends StatelessWidget {
   final chess_lib.Chess game;
@@ -121,25 +122,12 @@ class ChessBoardWidget extends StatelessWidget {
                               color: isKingInCheck ? checkColor : squareColor,
                             ),
                             child: Center(
-                              child: Text(
-                                _getPieceSymbol(piece),
-                                style: TextStyle(
-                                  fontSize: 34,
-                                  height: 1.0,
-                                  color: piece?.color == chess_lib.Color.WHITE
-                                      ? Colors.white
-                                      : const Color(0xFF1E1E1E),
-                                  shadows: [
-                                    Shadow(
-                                      color: piece?.color == chess_lib.Color.WHITE
-                                          ? Colors.black54
-                                          : Colors.white24,
-                                      blurRadius: 2,
-                                      offset: const Offset(0, 1),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                              child: piece != null
+                                  ? ChessPieceWidget(
+                                      piece: piece,
+                                      size: 36,
+                                    )
+                                  : null,
                             ),
                           ),
                           // Coordinate labels

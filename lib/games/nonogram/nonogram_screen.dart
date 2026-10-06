@@ -7,6 +7,7 @@ import '../../core/services/app_feedback_service.dart';
 import '../../core/widgets/app_scaffold.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
+import '../../core/widgets/fixed_slot_widgets.dart';
 
 /// Cell states: 0 = empty, 1 = filled, 2 = marked (ruled out).
 class NonogramScreen extends ConsumerStatefulWidget {
@@ -24,6 +25,7 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
   List<int> _grid = [];
   final List<List<int>> _history = [];
   bool _loading = true;
+  bool _isGenerating = false;
   bool _generationFailed = false;
   bool _isSolved = false;
   int _request = 0;
@@ -45,7 +47,8 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
   Future<void> _loadPuzzle() async {
     final request = ++_request;
     setState(() {
-      _loading = true;
+      _isGenerating = true;
+      if (_puzzle == null) _loading = true;
       _generationFailed = false;
     });
     try {
@@ -57,11 +60,15 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
         _history.clear();
         _isSolved = false;
         _loading = false;
+        _isGenerating = false;
       });
       startSession();
     } catch (_) {
       if (mounted && request == _request) {
-        setState(() => _generationFailed = true);
+        setState(() {
+          _isGenerating = false;
+          if (_puzzle == null) _generationFailed = true;
+        });
         showPuzzleHint('Generation failed. Tap Next to retry.');
       }
     }
@@ -70,12 +77,12 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
   void _remember() => _history.add(List<int>.of(_grid));
 
   void _undo() {
-    if (_history.isEmpty || _isSolved) return;
+    if (_history.isEmpty || _isSolved || _isGenerating) return;
     setState(() => _grid = _history.removeLast());
   }
 
   void _onCellTap(int index) {
-    if (_isSolved || _puzzle == null) return;
+    if (_isSolved || _isGenerating || _puzzle == null) return;
     AppFeedbackService.tap(ref);
     _remember();
     setState(() {
@@ -85,7 +92,7 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
   }
 
   void _onCellLongPress(int index) {
-    if (_isSolved || _puzzle == null) return;
+    if (_isSolved || _isGenerating || _puzzle == null) return;
     AppFeedbackService.tap(ref);
     _remember();
     setState(() {
@@ -180,7 +187,7 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
           tooltip: 'Hint',
         ),
       ],
-      body: _loading
+      body: _puzzle == null
           ? Column(
               children: [
                 buildPracticeModeToggle(),
@@ -207,39 +214,45 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
           : Column(
               children: [
                 buildPracticeModeToggle(),
+                ThinGeneratingBar(isGenerating: _isGenerating),
                 const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Expanded(
-                        child: Text(
-                          'Tap to fill · long-press to mark ✕',
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (_isSolved)
-                        Text(
-                          'Solved!',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            color: colors.primary,
+                SizedBox(
+                  height: 38,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Tap to fill · long-press to mark ✕',
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                    ],
+                        if (_isSolved)
+                          Text(
+                            'Solved!',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              color: colors.primary,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
                 const Divider(height: 1),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(12),
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final puzzle = _puzzle!;
+                    child: SmoothBoardTransition(
+                      keyId: 'nonogram_board_${puzzleSeed()}_${_puzzle!.size}',
+                      child: Container(
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final puzzle = _puzzle!;
                         final maxRowClueLen = puzzle.rowClues
                             .map((c) => c.length)
                             .reduce((a, b) => a > b ? a : b);
@@ -336,22 +349,27 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
                     ),
                   ),
                 ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (shouldShowNextButton(_isSolved))
-                        ElevatedButton.icon(
-                          icon: const Icon(Icons.arrow_forward_rounded),
-                          label: const Text('Next Nonogram'),
-                          onPressed: nextPuzzle,
-                        ),
-                    ],
+              ),
+            ),
+            Container(
+              height: 52,
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: Center(
+                child: Visibility(
+                  visible: shouldShowNextButton(_isSolved),
+                  maintainSize: true,
+                  maintainAnimation: true,
+                  maintainState: true,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.arrow_forward_rounded),
+                    label: const Text('Next Nonogram'),
+                    onPressed: nextPuzzle,
                   ),
                 ),
-              ],
+              ),
             ),
+          ],
+        ),
     );
   }
 }
