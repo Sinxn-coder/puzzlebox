@@ -24,13 +24,16 @@ class GameModeToggle extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final targetWidth = constraints.maxWidth < 380 ? 380.0 : constraints.maxWidth;
           return FittedBox(
             fit: BoxFit.scaleDown,
             alignment: Alignment.center,
-            child: SizedBox(
-              width: targetWidth,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minWidth: constraints.maxWidth,
+              ),
               child: Row(
+                mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   // Mode Segmented Capsule (pinned position)
                   Container(
@@ -61,7 +64,7 @@ class GameModeToggle extends StatelessWidget {
                     ),
                   ),
 
-                  const Spacer(),
+                  const SizedBox(width: 12),
 
                   // Practice Session Counter Badge (reserved slot, never moves or collapses)
                   Visibility(

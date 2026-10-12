@@ -436,10 +436,9 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
             ),
             const SizedBox(height: 14),
 
-            // Fixed-height Info Card Slot (never collapses or resizes)
-            SizedBox(
-              height: 92,
-              width: double.infinity,
+            // Flexible-height Info Card Slot
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 92),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 150),
                 switchInCurve: Curves.easeIn,
@@ -448,7 +447,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                     ? Container(
                         key: const ValueKey('chess_daily_card'),
                         width: double.infinity,
-                        height: 92,
+                        constraints: const BoxConstraints(minHeight: 92),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -537,7 +536,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                         ? Container(
                             key: const ValueKey('chess_ai_card'),
                             width: double.infinity,
-                            height: 92,
+                            constraints: const BoxConstraints(minHeight: 92),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -550,25 +549,28 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'AI Opponent',
-                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'On-device minimax chess engine',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: colors.onSurfaceVariant,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        'AI Opponent',
+                                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'On-device minimax chess engine',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                                   decoration: BoxDecoration(
@@ -612,7 +614,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                         : Container(
                             key: const ValueKey('chess_pass_card'),
                             width: double.infinity,
-                            height: 92,
+                            constraints: const BoxConstraints(minHeight: 92),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -634,24 +636,26 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                                   child: const Icon(Icons.people_alt_rounded, size: 22, color: Colors.black),
                                 ),
                                 const SizedBox(width: 14),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'Pass & Play',
-                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Play side-by-side on this device',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: colors.onSurfaceVariant,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        'Pass & Play',
+                                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Play side-by-side on this device',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),

@@ -67,21 +67,24 @@ class ResultModal extends ConsumerWidget {
 
             // ── Stats Row ────────────────────────────────────────────────
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
-                _StatChip(label: 'Played', value: '${stats.gamesPlayed}', accentColor: accentColor),
-                _StatChip(
-                  label: 'Win %',
-                  value: '${stats.winPercentage.round()}%',
-                  accentColor: accentColor,
+                Expanded(child: _StatChip(label: 'Played', value: '${stats.gamesPlayed}', accentColor: accentColor)),
+                Expanded(
+                  child: _StatChip(
+                    label: 'Win %',
+                    value: '${stats.winPercentage.round()}%',
+                    accentColor: accentColor,
+                  ),
                 ),
-                _StatChip(
-                  label: 'Streak',
-                  value: '${stats.currentStreak}',
-                  icon: stats.currentStreak > 0 ? '🔥' : null,
-                  accentColor: accentColor,
+                Expanded(
+                  child: _StatChip(
+                    label: 'Streak',
+                    value: '${stats.currentStreak}',
+                    icon: stats.currentStreak > 0 ? '🔥' : null,
+                    accentColor: accentColor,
+                  ),
                 ),
-                _StatChip(label: 'Best', value: '${stats.maxStreak}', accentColor: accentColor),
+                Expanded(child: _StatChip(label: 'Best', value: '${stats.maxStreak}', accentColor: accentColor)),
               ],
             ),
             const SizedBox(height: 24),
@@ -166,34 +169,37 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Column(
-      children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Text(icon!, style: const TextStyle(fontSize: 16)),
-              const SizedBox(width: 2),
-            ],
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-                color: isDark ? Colors.white : Colors.black,
+    return FittedBox(
+      fit: BoxFit.scaleDown,
+      child: Column(
+        children: [
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Text(icon!, style: const TextStyle(fontSize: 16)),
+                const SizedBox(width: 2),
+              ],
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  color: isDark ? Colors.white : Colors.black,
+                ),
               ),
-            ),
-          ],
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w800,
-            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF525252),
+            ],
           ),
-        ),
-      ],
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF525252),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

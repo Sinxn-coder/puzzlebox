@@ -30,17 +30,17 @@ Everything is 100% free, offline, and ad-free. No accounts, no subscriptions, no
 2. **Sudoku** - Classic 9x9 logic placement with notes and error feedback.
 3. **Daily Five** - 5-letter word guessing challenge with position clues.
 4. **Connections** - Group 16 words into 4 themed categories.
-5. **Spelling Bee** - Find as many words as possible using 7 letters.
-6. **Mini Crossword** - Quick, fun daily grid crosswords.
-7. **Strands** - Find themed word paths that fill the grid.
-8. **Pips** - Solvable domino sum-matching puzzle.
-9. **Tiles** - Pattern & color matching pair finder.
-10. **Letter Boxed** - Connect side letters to form word chains.
-11. **Vertex** - Connect dots to satisfy degree rules.
-12. **Nonogram** - Picture logic grid puzzles.
-13. **Binary** - Fill grids with 0s and 1s adhering to binary rules.
-14. **Cages** - Latin square math puzzle grids.
-15. **Word Search** - Classic word finder grid.
+5. **The Mini** - Quick daily 5x5 crossword.
+6. **Spelling Bee** - Find as many words as possible using 7 letters.
+7. **Crossword** - Full size crossword puzzle.
+8. **Strands** - Find themed word paths that fill the grid.
+9. **Pips** - Solvable domino sum-matching puzzle.
+10. **Tiles** - Pattern & color matching pair finder.
+11. **Letter Boxed** - Connect side letters to form word chains.
+12. **Vertex** - Connect dots to satisfy degree rules.
+13. **Nonogram** - Picture logic grid puzzles.
+14. **Binary** - Fill grids with 0s and 1s adhering to binary rules.
+15. **Cages** - Latin square math puzzle grids.
 
 ---
 

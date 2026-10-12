@@ -160,11 +160,15 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.black.withValues(alpha: 0.4),
-      builder: (_) => Padding(
-        padding: EdgeInsets.only(top: 80),
-        child: ResultModal(mode: _mode),
+      builder: (_) => Align(
+        alignment: Alignment.bottomCenter,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 480),
+          child: ResultModal(mode: _mode),
+        ),
       ),
     );
   }

@@ -501,7 +501,14 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                                       border: Border.all(color: Colors.black, width: 2.2),
                                       boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
                                     ),
-                                    child: const Text('Shuffle', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                                    child: Text(
+                                      'Shuffle',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13,
+                                        color: Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black,
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -515,7 +522,16 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                                       border: Border.all(color: Colors.black, width: 2.2),
                                       boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
                                     ),
-                                    child: const Text('Deselect All', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                                    child: Text(
+                                      'Deselect All',
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w900,
+                                        fontSize: 13,
+                                        color: _selectedWords.isEmpty
+                                            ? Colors.grey.shade600
+                                            : (Theme.of(context).brightness == Brightness.dark ? Colors.white : Colors.black),
+                                      ),
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 8),

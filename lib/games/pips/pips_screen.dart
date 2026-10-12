@@ -591,50 +591,55 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 6),
             child: SizedBox(
               height: 36,
-              child: FittedBox(
-                fit: BoxFit.scaleDown,
-                alignment: Alignment.centerLeft,
-                child: SizedBox(
-                  width: 360,
-                  child: Row(
-                    children: [
-                      Text(
-                        'Tray (${_tray.length} left)',
-                        style: TextStyle(
-                          fontSize: 13.5,
-                          fontWeight: FontWeight.w900,
-                          color: theme.colorScheme.onSurface,
-                          fontFeatures: const [FontFeature.tabularFigures()],
-                        ),
-                      ),
-                      const Spacer(),
-                      Visibility(
-                        visible: _selectedTrayDomino != null,
-                        maintainSize: true,
-                        maintainAnimation: true,
-                        maintainState: true,
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                            minimumSize: Size.zero,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerLeft,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Tray (${_tray.length} left)',
+                            style: TextStyle(
+                              fontSize: 13.5,
+                              fontWeight: FontWeight.w900,
+                              color: theme.colorScheme.onSurface,
+                              fontFeatures: const [FontFeature.tabularFigures()],
+                            ),
                           ),
-                          icon: const Icon(Icons.rotate_right_rounded, size: 16),
-                          label: Text(
-                            _selectedTrayDomino?.isVertical == true ? 'Vertical' : 'Horizontal',
-                            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                          const SizedBox(width: 12),
+                          Visibility(
+                            visible: _selectedTrayDomino != null,
+                            maintainSize: true,
+                            maintainAnimation: true,
+                            maintainState: true,
+                            child: ElevatedButton.icon(
+                              style: ElevatedButton.styleFrom(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                minimumSize: Size.zero,
+                              ),
+                              icon: const Icon(Icons.rotate_right_rounded, size: 16),
+                              label: Text(
+                                _selectedTrayDomino?.isVertical == true ? 'Vertical' : 'Horizontal',
+                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w900),
+                              ),
+                              onPressed: () {
+                                if (_selectedTrayDomino == null) return;
+                                AppFeedbackService.tap(ref);
+                                setState(() {
+                                  _selectedTrayDomino!.isVertical = !_selectedTrayDomino!.isVertical;
+                                });
+                              },
+                            ),
                           ),
-                          onPressed: () {
-                            if (_selectedTrayDomino == null) return;
-                            AppFeedbackService.tap(ref);
-                            setState(() {
-                              _selectedTrayDomino!.isVertical = !_selectedTrayDomino!.isVertical;
-                            });
-                          },
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ),

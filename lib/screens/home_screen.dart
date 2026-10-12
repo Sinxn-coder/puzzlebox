@@ -201,8 +201,9 @@ class _HomeState extends ConsumerState<HomeScreen> {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (_) =>
-          const SingleChildScrollView(child: SettingsSheet()),
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const SettingsSheet(),
     );
   }
 
@@ -472,16 +473,21 @@ class _HomeState extends ConsumerState<HomeScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text(
-                          'My Puzzles',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -.5,
+                        const Flexible(
+                          child: Text(
+                            'My Puzzles',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -.5,
+                            ),
                           ),
                         ),
-                        const Spacer(),
+                        const SizedBox(width: 8),
                         Text(
                           '${filteredGames.length} games',
                           style: TextStyle(
