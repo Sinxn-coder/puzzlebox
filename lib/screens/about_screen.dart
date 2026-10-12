@@ -64,7 +64,7 @@ class AboutScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 2),
           Text(
-            'Version 1.2 • Build 12',
+            'Version 1.2 • Build 13',
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 13,

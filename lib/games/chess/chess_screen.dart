@@ -24,7 +24,7 @@ class ChessScreen extends ConsumerStatefulWidget {
 }
 
 class _ChessScreenState extends ConsumerState<ChessScreen> {
-  ChessGameMode _mode = ChessGameMode.dailyPuzzle;
+  ChessGameMode _mode = ChessGameMode.vsAI;
   AIDifficulty _aiDifficulty = AIDifficulty.medium;
 
   late chess_lib.Chess _game;
@@ -43,7 +43,11 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
   @override
   void initState() {
     super.initState();
-    _startDailyPuzzle();
+    final now = DateTime.now();
+    _currentPuzzleIndex = now.difference(DateTime(2026, 1, 1)).inDays;
+    if (_currentPuzzleIndex < 0) _currentPuzzleIndex = 0;
+    _currentPuzzle = ChessPuzzlesData.getPuzzleAtIndex(_currentPuzzleIndex);
+    _startVsAIGame();
   }
 
   void _startDailyPuzzle() {
@@ -357,7 +361,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
           actions: [
             ElevatedButton.icon(
               icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Next Puzzle ➔'),
+              label: Text(_mode == ChessGameMode.dailyPuzzle ? 'Next Puzzle ➔' : 'Play Again ➔'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.primary,
                 foregroundColor: colors.onPrimary,
@@ -428,9 +432,9 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
               ),
               child: Row(
                 children: [
-                  Expanded(child: _buildNeoModeTab('Daily Puzzles', ChessGameMode.dailyPuzzle, colors)),
-                  Expanded(child: _buildNeoModeTab('Vs AI', ChessGameMode.vsAI, colors)),
-                  Expanded(child: _buildNeoModeTab('Pass & Play', ChessGameMode.passAndPlay, colors)),
+                  Expanded(child: _buildNeoModeTab('Vs AI', ChessGameMode.vsAI, colors, isDark)),
+                  Expanded(child: _buildNeoModeTab('Daily Puzzles', ChessGameMode.dailyPuzzle, colors, isDark)),
+                  Expanded(child: _buildNeoModeTab('Pass & Play', ChessGameMode.passAndPlay, colors, isDark)),
                 ],
               ),
             ),
@@ -730,7 +734,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                 ),
                 _buildNeoActionButton(
                   icon: Icons.refresh_rounded,
-                  tooltip: 'Restart Puzzle',
+                  tooltip: _mode == ChessGameMode.dailyPuzzle ? 'Restart Puzzle' : 'New Game',
                   onPressed: () {
                     setState(() {
                       if (_mode == ChessGameMode.dailyPuzzle) {
@@ -772,7 +776,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
     );
   }
 
-  Widget _buildNeoModeTab(String label, ChessGameMode targetMode, ColorScheme colors) {
+  Widget _buildNeoModeTab(String label, ChessGameMode targetMode, ColorScheme colors, bool isDark) {
     final isSelected = _mode == targetMode;
     return GestureDetector(
       onTap: () {
@@ -801,7 +805,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
           style: TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.w900,
-            color: Colors.black,
+            color: isSelected ? Colors.black : (isDark ? Colors.white70 : Colors.black87),
           ),
         ),
       ),
