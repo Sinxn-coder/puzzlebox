@@ -24,7 +24,7 @@ class ChessScreen extends ConsumerStatefulWidget {
 }
 
 class _ChessScreenState extends ConsumerState<ChessScreen> {
-  ChessGameMode _mode = ChessGameMode.dailyPuzzle;
+  ChessGameMode _mode = ChessGameMode.vsAI;
   AIDifficulty _aiDifficulty = AIDifficulty.medium;
 
   late chess_lib.Chess _game;
@@ -43,7 +43,11 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
   @override
   void initState() {
     super.initState();
-    _startDailyPuzzle();
+    final now = DateTime.now();
+    _currentPuzzleIndex = now.difference(DateTime(2026, 1, 1)).inDays;
+    if (_currentPuzzleIndex < 0) _currentPuzzleIndex = 0;
+    _currentPuzzle = ChessPuzzlesData.getPuzzleAtIndex(_currentPuzzleIndex);
+    _startVsAIGame();
   }
 
   void _startDailyPuzzle() {
@@ -357,7 +361,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
           actions: [
             ElevatedButton.icon(
               icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Next Puzzle ➔'),
+              label: Text(_mode == ChessGameMode.dailyPuzzle ? 'Next Puzzle ➔' : 'Play Again ➔'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: colors.primary,
                 foregroundColor: colors.onPrimary,
@@ -428,18 +432,17 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
               ),
               child: Row(
                 children: [
-                  Expanded(child: _buildNeoModeTab('Daily Puzzles', ChessGameMode.dailyPuzzle, colors)),
-                  Expanded(child: _buildNeoModeTab('Vs AI', ChessGameMode.vsAI, colors)),
-                  Expanded(child: _buildNeoModeTab('Pass & Play', ChessGameMode.passAndPlay, colors)),
+                  Expanded(child: _buildNeoModeTab('Vs AI', ChessGameMode.vsAI, colors, isDark)),
+                  Expanded(child: _buildNeoModeTab('Daily Puzzles', ChessGameMode.dailyPuzzle, colors, isDark)),
+                  Expanded(child: _buildNeoModeTab('Pass & Play', ChessGameMode.passAndPlay, colors, isDark)),
                 ],
               ),
             ),
             const SizedBox(height: 14),
 
-            // Fixed-height Info Card Slot (never collapses or resizes)
-            SizedBox(
-              height: 92,
-              width: double.infinity,
+            // Flexible-height Info Card Slot
+            ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 92),
               child: AnimatedSwitcher(
                 duration: const Duration(milliseconds: 150),
                 switchInCurve: Curves.easeIn,
@@ -448,7 +451,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                     ? Container(
                         key: const ValueKey('chess_daily_card'),
                         width: double.infinity,
-                        height: 92,
+                        constraints: const BoxConstraints(minHeight: 92),
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                         decoration: BoxDecoration(
                           color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -537,7 +540,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                         ? Container(
                             key: const ValueKey('chess_ai_card'),
                             width: double.infinity,
-                            height: 92,
+                            constraints: const BoxConstraints(minHeight: 92),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -550,25 +553,28 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'AI Opponent',
-                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'On-device minimax chess engine',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: colors.onSurfaceVariant,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        'AI Opponent',
+                                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'On-device minimax chess engine',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
+                                const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 2),
                                   decoration: BoxDecoration(
@@ -612,7 +618,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                         : Container(
                             key: const ValueKey('chess_pass_card'),
                             width: double.infinity,
-                            height: 92,
+                            constraints: const BoxConstraints(minHeight: 92),
                             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF1E293B) : Colors.white,
@@ -634,24 +640,26 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                                   child: const Icon(Icons.people_alt_rounded, size: 22, color: Colors.black),
                                 ),
                                 const SizedBox(width: 14),
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    const Text(
-                                      'Pass & Play',
-                                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
-                                    ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Play side-by-side on this device',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w700,
-                                        color: colors.onSurfaceVariant,
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Text(
+                                        'Pass & Play',
+                                        style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
                                       ),
-                                    ),
-                                  ],
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Play side-by-side on this device',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w700,
+                                          color: colors.onSurfaceVariant,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
                             ),
@@ -726,7 +734,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                 ),
                 _buildNeoActionButton(
                   icon: Icons.refresh_rounded,
-                  tooltip: 'Restart Puzzle',
+                  tooltip: _mode == ChessGameMode.dailyPuzzle ? 'Restart Puzzle' : 'New Game',
                   onPressed: () {
                     setState(() {
                       if (_mode == ChessGameMode.dailyPuzzle) {
@@ -768,7 +776,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
     );
   }
 
-  Widget _buildNeoModeTab(String label, ChessGameMode targetMode, ColorScheme colors) {
+  Widget _buildNeoModeTab(String label, ChessGameMode targetMode, ColorScheme colors, bool isDark) {
     final isSelected = _mode == targetMode;
     return GestureDetector(
       onTap: () {
@@ -797,7 +805,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
           style: TextStyle(
             fontSize: 12.5,
             fontWeight: FontWeight.w900,
-            color: Colors.black,
+            color: isSelected ? Colors.black : (isDark ? Colors.white70 : Colors.black87),
           ),
         ),
       ),

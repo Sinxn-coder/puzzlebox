@@ -45,11 +45,14 @@ class AppScaffold extends ConsumerWidget {
             builder: (_) => AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: const BorderSide(color: Colors.black, width: 2),
+                side: const BorderSide(color: Colors.black, width: 2.5),
               ),
               title: const Text('How to Play', style: TextStyle(fontWeight: FontWeight.w900)),
-              content: SingleChildScrollView(
-                child: Text(rules, style: const TextStyle(height: 1.4, fontWeight: FontWeight.w600)),
+              content: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 480),
+                child: SingleChildScrollView(
+                  child: Text(rules, style: const TextStyle(height: 1.45, fontWeight: FontWeight.w600)),
+                ),
               ),
               actions: [
                 TextButton(
@@ -97,6 +100,7 @@ class AppScaffold extends ConsumerWidget {
                   onPressed: () => showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
+                    useSafeArea: true,
                     backgroundColor: Colors.transparent,
                     builder: (_) => GameRulesSheet(
                       title: mainTitle,
@@ -183,124 +187,212 @@ class SettingsSheet extends ConsumerWidget {
       ('Neon Orange', 6),
       ('Minimal Slate', 7),
     ];
+    final media = MediaQuery.of(context);
+    final maxHeight = (media.size.height * 0.85).clamp(280.0, 620.0);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: const Border(top: BorderSide(color: Colors.black, width: 3.0)),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 48,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.black,
-                borderRadius: BorderRadius.circular(3),
-              ),
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 540,
+          maxHeight: maxHeight,
+        ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: const Border(
+              top: BorderSide(color: Colors.black, width: 3.0),
+              left: BorderSide(color: Colors.black, width: 3.0),
+              right: BorderSide(color: Colors.black, width: 3.0),
             ),
           ),
-          const SizedBox(height: 20),
-          const Text(
-            'Neo Customization',
-            style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, letterSpacing: -.5),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Select your favorite accent color & appearance mode',
-            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: colors.onSurfaceVariant),
-          ),
-          const SizedBox(height: 18),
-          const Text(
-            'ACCENT COLOR PALETTE',
-            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, letterSpacing: 1.1, color: Colors.black),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              for (final opt in paletteOptions)
-                ChoiceChip(
-                  avatar: Container(
-                    width: 14,
-                    height: 14,
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
                     decoration: BoxDecoration(
-                      color: opt.$2 == 0 ? null : AppTheme.neoPalettes[opt.$2],
-                      gradient: opt.$2 == 0
-                          ? const SweepGradient(
-                              colors: [
-                                Color(0xFFFACC15),
-                                Color(0xFF4ADE80),
-                                Color(0xFFF43F5E),
-                                Color(0xFF38BDF8),
-                                Color(0xFFC084FC),
-                                Color(0xFFFB923C),
-                                Color(0xFFFACC15),
-                              ],
-                            )
-                          : null,
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.black, width: 1.5),
+                      color: isDark ? Colors.white38 : Colors.black26,
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
-                  label: Text(opt.$1),
-                  selected: settings.palette == opt.$2,
-                  onSelected: (_) =>
-                      ref.read(settingsProvider.notifier).setPalette(opt.$2),
                 ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Container(
-            decoration: BoxDecoration(
-              color: isDark ? const Color(0xFF1E293B) : Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.black, width: 2.5),
-              boxShadow: const [
-                BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-              ],
-            ),
-            padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                _SettingRow(
-                  label: 'Dark Mode',
-                  subtitle: 'Switch app appearance theme',
-                  child: Switch(
-                    value: settings.themeMode == ThemeMode.dark,
-                    activeThumbColor: colors.primary,
-                    onChanged: (v) {
-                      ref
-                          .read(settingsProvider.notifier)
-                          .setThemeMode(v ? ThemeMode.dark : ThemeMode.light);
-                    },
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.black, width: 2.0),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                        ],
+                      ),
+                      child: const Icon(Icons.tune_rounded, size: 20, color: Colors.black),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Neo Customization',
+                            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, letterSpacing: -.5),
+                          ),
+                          Text(
+                            'Appearance & haptic preferences',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colors.onSurfaceVariant),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'ACCENT COLOR PALETTE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.1,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            for (final opt in paletteOptions)
+                              ChoiceChip(
+                                avatar: Container(
+                                  width: 14,
+                                  height: 14,
+                                  decoration: BoxDecoration(
+                                    color: opt.$2 == 0 ? null : AppTheme.neoPalettes[opt.$2],
+                                    gradient: opt.$2 == 0
+                                        ? const SweepGradient(
+                                            colors: [
+                                              Color(0xFFFACC15),
+                                              Color(0xFF4ADE80),
+                                              Color(0xFFF43F5E),
+                                              Color(0xFF38BDF8),
+                                              Color(0xFFC084FC),
+                                              Color(0xFFFB923C),
+                                              Color(0xFFFACC15),
+                                            ],
+                                          )
+                                        : null,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.black, width: 1.5),
+                                  ),
+                                ),
+                                label: Text(opt.$1),
+                                selected: settings.palette == opt.$2,
+                                onSelected: (_) =>
+                                    ref.read(settingsProvider.notifier).setPalette(opt.$2),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.black, width: 2.0),
+                            boxShadow: const [
+                              BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
+                            ],
+                          ),
+                          padding: const EdgeInsets.all(12),
+                          child: Column(
+                            children: [
+                              _SettingRow(
+                                label: 'Dark Mode',
+                                subtitle: 'Switch app appearance theme',
+                                child: Switch(
+                                  value: settings.themeMode == ThemeMode.dark,
+                                  activeThumbColor: colors.primary,
+                                  onChanged: (v) {
+                                    ref
+                                        .read(settingsProvider.notifier)
+                                        .setThemeMode(v ? ThemeMode.dark : ThemeMode.light);
+                                  },
+                                ),
+                              ),
+                              const Divider(color: Colors.black, thickness: 1.5),
+                              _SettingRow(
+                                label: 'Haptic Feedback',
+                                subtitle: 'Tactile vibrations on key taps & game wins',
+                                child: Switch(
+                                  value: settings.hapticsEnabled,
+                                  activeThumbColor: colors.primary,
+                                  onChanged: (v) {
+                                    ref.read(settingsProvider.notifier).setHapticsEnabled(v);
+                                    if (v) AppFeedbackService.testHaptic();
+                                  },
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-                const Divider(color: Colors.black, thickness: 2),
-                _SettingRow(
-                  label: 'Haptic Feedback',
-                  subtitle: 'Tactile vibrations on key taps & game wins',
-                  child: Switch(
-                    value: settings.hapticsEnabled,
-                    activeThumbColor: colors.primary,
-                    onChanged: (v) {
-                      ref.read(settingsProvider.notifier).setHapticsEnabled(v);
-                      if (v) AppFeedbackService.testHaptic();
-                    },
+                const SizedBox(height: 14),
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.pop(context),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.black, width: 2.5),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        'Done',
+                        style: TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-
               ],
             ),
           ),
-
-        ],
+        ),
       ),
     );
   }
@@ -362,137 +454,161 @@ class GameRulesSheet extends StatelessWidget {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
+    final media = MediaQuery.of(context);
+    final maxHeight = (media.size.height * 0.78).clamp(240.0, 580.0);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: colors.surface,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-        border: const Border(
-          top: BorderSide(color: Colors.black, width: 3.0),
-          left: BorderSide(color: Colors.black, width: 3.0),
-          right: BorderSide(color: Colors.black, width: 3.0),
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: 540,
+          maxHeight: maxHeight,
         ),
-      ),
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-      child: SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Drag indicator handle
-            Center(
-              child: Container(
-                width: 44,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: isDark ? Colors.white38 : Colors.black26,
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
+        child: Container(
+          decoration: BoxDecoration(
+            color: colors.surface,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: const Border(
+              top: BorderSide(color: Colors.black, width: 3.0),
+              left: BorderSide(color: Colors.black, width: 3.0),
+              right: BorderSide(color: Colors.black, width: 3.0),
             ),
-            const SizedBox(height: 16),
-
-            // Header Row
-            Row(
+          ),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+          child: SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.black, width: 2.0),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-                    ],
-                  ),
-                  child: const Icon(Icons.help_outline_rounded, size: 22, color: Colors.black),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'How to Play',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: colors.onSurfaceVariant,
-                        ),
-                      ),
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          letterSpacing: -0.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.close_rounded),
-                  onPressed: () => Navigator.pop(context),
-                  tooltip: 'Close',
-                ),
-              ],
-            ),
-            const SizedBox(height: 18),
-
-            // Rules Content Card
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black, width: 2.0),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                ],
-              ),
-              child: Text(
-                rules,
-                style: TextStyle(
-                  fontSize: 15,
-                  height: 1.5,
-                  fontWeight: FontWeight.w600,
-                  color: isDark ? Colors.white : const Color(0xFF1E293B),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // "Got it!" Neo-Brutalist button
-            Material(
-              color: Colors.transparent,
-              child: InkWell(
-                onTap: () => Navigator.pop(context),
-                borderRadius: BorderRadius.circular(14),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  decoration: BoxDecoration(
-                    color: colors.primary,
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(color: Colors.black, width: 2.5),
-                    boxShadow: const [
-                      BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                    ],
-                  ),
-                  alignment: Alignment.center,
-                  child: const Text(
-                    "Got it, let's play!",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black,
+                // Drag indicator handle
+                Center(
+                  child: Container(
+                    width: 44,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isDark ? Colors.white38 : Colors.black26,
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 ),
-              ),
+                const SizedBox(height: 12),
+
+                // Header Row
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.black, width: 2.0),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+                        ],
+                      ),
+                      child: const Icon(Icons.help_outline_rounded, size: 20, color: Colors.black),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'How to Play',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: colors.onSurfaceVariant,
+                            ),
+                          ),
+                          Text(
+                            title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded),
+                      onPressed: () => Navigator.pop(context),
+                      tooltip: 'Close',
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+
+                // Rules Content Card - Scrollable within pinned layout
+                Flexible(
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.black, width: 2.0),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Scrollbar(
+                        thumbVisibility: true,
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(14),
+                          child: Text(
+                            rules,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              height: 1.45,
+                              fontWeight: FontWeight.w600,
+                              color: isDark ? Colors.white : const Color(0xFF1E293B),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+
+                // "Got it!" Neo-Brutalist button
+                Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => Navigator.pop(context),
+                    borderRadius: BorderRadius.circular(14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        color: colors.primary,
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: Colors.black, width: 2.5),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
+                        ],
+                      ),
+                      alignment: Alignment.center,
+                      child: const Text(
+                        "Got it, let's play!",
+                        style: TextStyle(
+                          fontSize: 15.5,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );

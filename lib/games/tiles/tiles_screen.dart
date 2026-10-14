@@ -217,43 +217,49 @@ class _TilesScreenState extends ConsumerState<TilesScreen>
                 // Score, Chain & Round Banner
                 SizedBox(
                   height: 32,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: SizedBox(
-                      width: 500,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Round $_roundCount',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.primary,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Round $_roundCount',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.primary,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Score: $_score',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Theme.of(context).colorScheme.onSurface,
+                                  fontFeatures: const [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Combo: 🔥 ${_comboChain}x',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.present,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                            ],
                           ),
-                          Text(
-                            'Score: $_score',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Theme.of(context).colorScheme.onSurface,
-                              fontFeatures: const [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                          Text(
-                            'Combo: 🔥 ${_comboChain}x',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.present,
-                              fontFeatures: [FontFeature.tabularFigures()],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ],

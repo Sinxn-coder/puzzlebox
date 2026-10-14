@@ -384,69 +384,67 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                         width: constraints.maxWidth,
                         child: FittedBox(
                           fit: BoxFit.scaleDown,
-                          child: SizedBox(
-                            width: 320,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                GestureDetector(
-                                  onTap: _delete,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: Colors.black, width: 2.2),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
-                                    ),
-                                    child: Text(
-                                      'Delete',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 13,
-                                        color: isDark ? Colors.white : Colors.black,
-                                      ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              GestureDetector(
+                                onTap: _delete,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: Colors.black, width: 2.2),
+                                    boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                  ),
+                                  child: Text(
+                                    'Delete',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 13,
+                                      color: isDark ? Colors.white : Colors.black,
                                     ),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                GestureDetector(
-                                  onTap: _shuffle,
-                                  child: Container(
-                                    width: 44,
-                                    height: 44,
-                                    decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: Colors.black, width: 2.2),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                              ),
+                              const SizedBox(width: 12),
+                              GestureDetector(
+                                onTap: _shuffle,
+                                child: Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: Colors.black, width: 2.2),
+                                    boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                  ),
+                                  child: Icon(Icons.refresh, color: isDark ? Colors.white : Colors.black),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              GestureDetector(
+                                onTap: _isGameComplete ? null : _submit,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                  decoration: BoxDecoration(
+                                    color: colors.primary,
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(color: Colors.black, width: 2.2),
+                                    boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                  ),
+                                  child: Text(
+                                    'Enter',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 13,
+                                      color: colors.onPrimary,
                                     ),
-                                    child: Icon(Icons.refresh, color: isDark ? Colors.white : Colors.black),
                                   ),
                                 ),
-                                const SizedBox(width: 12),
-                                GestureDetector(
-                                  onTap: _isGameComplete ? null : _submit,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                    decoration: BoxDecoration(
-                                      color: colors.primary,
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: Colors.black, width: 2.2),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
-                                    ),
-                                    child: Text(
-                                      'Enter',
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w900,
-                                        fontSize: 13,
-                                        color: colors.onPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
                       );

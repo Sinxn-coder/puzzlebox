@@ -324,27 +324,32 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                   height: 38,
                   child: Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: SizedBox(
-                        width: 380,
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            const Text(
-                              'Unique solution',
-                              style: TextStyle(fontWeight: FontWeight.w700),
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        return FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Unique solution',
+                                  style: TextStyle(fontWeight: FontWeight.w700),
+                                ),
+                                const SizedBox(width: 8),
+                                TabularText(
+                                  'Time $timerStr',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w900,
+                                    color: Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                              ],
                             ),
-                            TabularText(
-                              'Time $timerStr',
-                              style: TextStyle(
-                                fontWeight: FontWeight.w900,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -457,60 +462,72 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () => setState(() => _pencilMode = !_pencilMode),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: _pencilMode
-                                  ? Theme.of(context).colorScheme.primary
-                                  : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.black, width: 2.0),
-                              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
-                            ),
-                            child: Row(
-                              children: const [
-                                Icon(Icons.edit_note, size: 20, color: Colors.black),
-                                SizedBox(width: 4),
-                                Text('Pencil', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
+                        Builder(
+                          builder: (context) {
+                            final isDark = Theme.of(context).brightness == Brightness.dark;
+                            final pencilColor = _pencilMode ? Colors.black : (isDark ? Colors.white : Colors.black);
+                            final controlColor = isDark ? Colors.white : Colors.black;
+                            return Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                GestureDetector(
+                                  onTap: () => setState(() => _pencilMode = !_pencilMode),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: _pencilMode
+                                          ? Theme.of(context).colorScheme.primary
+                                          : (isDark ? const Color(0xFF1E293B) : Colors.white),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.black, width: 2.0),
+                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.edit_note, size: 20, color: pencilColor),
+                                        const SizedBox(width: 4),
+                                        Text('Pencil', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: pencilColor)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: _undo,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.black, width: 2.0),
+                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.undo, size: 18, color: controlColor),
+                                        const SizedBox(width: 4),
+                                        Text('Undo', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: controlColor)),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                GestureDetector(
+                                  onTap: _erase,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                    decoration: BoxDecoration(
+                                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: Colors.black, width: 2.0),
+                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    ),
+                                    child: Text('Erase', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: controlColor)),
+                                  ),
+                                ),
                               ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        GestureDetector(
-                          onTap: _undo,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.black, width: 2.0),
-                              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
-                            ),
-                            child: Row(
-                              children: const [
-                                Icon(Icons.undo, size: 18, color: Colors.black),
-                                SizedBox(width: 4),
-                                Text('Undo', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        GestureDetector(
-                          onTap: _erase,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.black, width: 2.0),
-                              boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
-                            ),
-                            child: const Text('Erase', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
-                          ),
+                            );
+                          },
                         ),
                         const SizedBox(width: 6),
                         Visibility(
