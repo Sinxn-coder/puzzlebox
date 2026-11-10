@@ -149,7 +149,7 @@ void main() {
       i < 15 && PracticeService(prefs).getSolvedCount('strands') == 0;
       i++
     ) {
-      await tester.tap(find.byTooltip('In-App Hints'), warnIfMissed: false);
+      await tester.tap(find.byTooltip('Hint'), warnIfMissed: false);
       await tester.pump(const Duration(milliseconds: 100));
       final submitFinder = find.text('Submit Word');
       if (submitFinder.evaluate().isNotEmpty) {
@@ -229,10 +229,10 @@ void main() {
       await connect(1, 2);
       await connect(1, 2);
       expect((painter().connections as List).length, 0);
-      await tester.tap(find.text('Undo'));
+      await tester.tap(find.byTooltip('Undo'));
       await tester.pump();
       expect((painter().connections as List).length, 1);
-      await tester.tap(find.text('Undo'));
+      await tester.tap(find.byTooltip('Undo'));
       await tester.pump();
       expect((painter().connections as List).length, 0);
       final dots = List<DotNode>.from(painter().dots);

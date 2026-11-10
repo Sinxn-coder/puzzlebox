@@ -10,6 +10,7 @@ import '../services/app_feedback_service.dart';
 import '../services/practice_service.dart';
 import '../services/puzzle_progression.dart';
 import '../services/date_service.dart';
+import '../services/session_resume.dart';
 import '../providers/settings_provider.dart';
 import '../services/engagement_service.dart';
 import '../services/stats_service.dart';
@@ -37,6 +38,13 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   String? _sessionKey;
   String? _sessionId;
   String? _sessionMode;
+  /// Seconds spent on the current puzzle; survives leaving and resuming.
+  final ValueNotifier<int> puzzleElapsed = ValueNotifier<int>(0);
+  String? _baseline;
+  bool _touched = false;
+
+  /// True once the player has changed the current puzzle.
+  bool get hasPuzzleProgress => _touched;
   Map<String, dynamic> captureProgress() => {};
   void restoreProgress(Map<String, dynamic> data) {}
   void startSession() {
@@ -48,6 +56,9 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _sessionKey = 'session_v2_${gameType}_${mode.name}_$difficulty';
     _sessionId = puzzleRequest.id;
     _sessionMode = mode.name;
+    _baseline = null;
+    _touched = false;
+    puzzleElapsed.value = 0;
     try {
       final raw =
           _prefs!.getString(_sessionKey!) ??
@@ -56,6 +67,8 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         final data = jsonDecode(raw) as Map<String, dynamic>;
         if (data['id'] == puzzleRequest.id && data['mode'] == mode.name) {
           restoreProgress(Map<String, dynamic>.from(data['progress']));
+          puzzleElapsed.value = data['elapsed'] as int? ?? 0;
+          _touched = data['touched'] as bool? ?? true;
         }
       }
     } catch (_) {
@@ -64,7 +77,10 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _prefs!.remove('session_v1_$gameType');
     _saveTimer = Timer.periodic(
       const Duration(seconds: 1),
-      (_) => _saveSession(),
+      (_) {
+        if (!_finishing && !_transitioning) puzzleElapsed.value++;
+        _saveSession();
+      },
     );
   }
 
@@ -87,10 +103,36 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (_prefs == null || _sessionKey == null || _finishing) return;
     final data = captureProgress();
     if (data.isEmpty) return;
+    // A game's own ticking clock is not progress; only real moves count.
+    final encoded = jsonEncode(Map.of(data)..remove('seconds'));
+    _baseline ??= encoded;
+    if (encoded != _baseline) _touched = true;
     _prefs!.setString(
       _sessionKey!,
-      jsonEncode({'id': _sessionId, 'mode': _sessionMode, 'progress': data}),
+      jsonEncode({
+        'id': _sessionId,
+        'mode': _sessionMode,
+        'progress': data,
+        'elapsed': puzzleElapsed.value,
+        'touched': _touched,
+      }),
     );
+    if (_touched) {
+      SessionResume.write(
+        _prefs!,
+        gameId: gameType,
+        mode: _sessionMode ?? mode.name,
+        difficulty: difficulty,
+        elapsedSeconds: puzzleElapsed.value,
+      );
+    } else {
+      final resume = SessionResume.read(_prefs!, gameType);
+      if (resume != null &&
+          resume.mode == _sessionMode &&
+          resume.difficulty == difficulty) {
+        SessionResume.clear(_prefs!, gameType);
+      }
+    }
   }
 
   String get _progressionKey => '$gameType:$difficulty';
@@ -100,10 +142,14 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       : stableSeed(
           '${ref.read(puzzleProgressionProvider).seed(gameType, progressionKey: _progressionKey)}:$difficulty',
         );
+  /// Bump when a game's generator changes so saves made for the old
+  /// puzzles are not restored onto new boards.
+  int get puzzleVersion => 1;
   PuzzleRequest get puzzleRequest => PuzzleRequest(
     gameType,
     puzzleSeed(),
     PuzzleDifficulty.values.byName(difficulty.toLowerCase()),
+    version: puzzleVersion,
   );
   void onPracticeModeChanged(GameMode mode) {}
   void loadDailyPuzzle() {}
@@ -117,6 +163,14 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         ref.read(settingsProvider).defaultDifficulty;
     if (!['Easy', 'Medium', 'Hard'].contains(difficulty)) difficulty = 'Medium';
     final prefs = ref.read(sharedPreferencesProvider);
+    // Reopen whichever puzzle the player left unfinished.
+    final resume = SessionResume.read(prefs, gameType);
+    if (resume != null) {
+      _mode = resume.isDaily ? GameMode.daily : GameMode.practice;
+      if (['Easy', 'Medium', 'Hard'].contains(resume.difficulty)) {
+        difficulty = resume.difficulty;
+      }
+    }
     for (final level in ['Easy', 'Medium', 'Hard']) {
       final key = 'progress_v1_$gameType:$level';
       if (!prefs.containsKey(key)) {
@@ -132,6 +186,8 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _finishing = true;
     _saveTimer?.cancel();
     if (_sessionKey != null) _prefs?.remove(_sessionKey!);
+    if (_prefs != null) SessionResume.clear(_prefs!, gameType);
+    final solveSeconds = puzzleElapsed.value;
     final generation = _generation;
 
     try {
@@ -148,7 +204,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
             .recordCompletion(
               game: gameType,
               difficulty: difficulty,
-              seconds: _sessionWatch.elapsed.inSeconds,
+              seconds: solveSeconds,
             );
         await ref
             .read(statsServiceProvider)
@@ -296,6 +352,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _saveSession();
     _saveTimer?.cancel();
     _advanceTimer?.cancel();
+    puzzleElapsed.dispose();
     super.dispose();
   }
 }

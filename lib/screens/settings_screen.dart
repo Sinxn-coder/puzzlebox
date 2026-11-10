@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/notification_settings_provider.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/services/app_feedback_service.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/app_scaffold.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -40,14 +42,8 @@ class SettingsScreen extends ConsumerWidget {
                     state.palette,
                   ),
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black, width: 2.5),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black,
-                      offset: Offset(3, 3),
-                      blurRadius: 0,
-                    ),
-                  ],
+                  border: Neo.border(2.5),
+                  boxShadow: Neo.shadow(3),
                 ),
                 alignment: Alignment.center,
                 child: const Icon(
@@ -110,7 +106,7 @@ class SettingsScreen extends ConsumerWidget {
                           )
                         : null,
                     shape: BoxShape.circle,
-                    border: Border.all(color: Colors.black, width: 1.5),
+                    border: Neo.border(1.5),
                   ),
                 ),
                 label: Text(opt.$1),
@@ -127,14 +123,8 @@ class SettingsScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.black, width: 2.5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black,
-                  offset: Offset(3.5, 3.5),
-                  blurRadius: 0,
-                ),
-              ],
+              border: Neo.border(2.5),
+              boxShadow: Neo.shadow(3.5),
             ),
             padding: const EdgeInsets.all(8),
             child: SegmentedButton<ThemeMode>(
@@ -185,14 +175,8 @@ class SettingsScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.black, width: 2.5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black,
-                  offset: Offset(3.5, 3.5),
-                  blurRadius: 0,
-                ),
-              ],
+              border: Neo.border(2.5),
+              boxShadow: Neo.shadow(3.5),
             ),
             padding: const EdgeInsets.all(16),
             child: Material(
@@ -273,6 +257,65 @@ class SettingsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 28),
 
+          const _Label('DISPLAY & ACCESSIBILITY'),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Neo.border(2.5),
+              boxShadow: Neo.shadow(3.5),
+            ),
+            padding: const EdgeInsets.all(16),
+            child: Material(
+              type: MaterialType.transparency,
+              child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeThumbColor:
+                      AppTheme.neoPalettes[state.palette.clamp(0, 4)],
+                  title: const Text(
+                    'Soft Outlines',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  ),
+                  subtitle: const Text(
+                    'Thinner borders and gentle shadows instead of bold black outlines',
+                  ),
+                  value: state.neoStyle == NeoStyle.soft,
+                  onChanged: (v) =>
+                      notifier.setNeoStyle(v ? NeoStyle.soft : NeoStyle.bold),
+                ),
+                Divider(color: Neo.ink, thickness: Neo.width(2)),
+                SwitchListTile(
+                  contentPadding: EdgeInsets.zero,
+                  activeThumbColor:
+                      AppTheme.neoPalettes[state.palette.clamp(0, 4)],
+                  title: const Text(
+                    'Colorblind Friendly',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  ),
+                  subtitle: const Text(
+                    'Blue/orange feedback colors with shape cues on tiles',
+                  ),
+                  value: state.colorblindMode,
+                  onChanged: notifier.setColorblindMode,
+                ),
+                Divider(color: Neo.ink, thickness: Neo.width(2)),
+                const SizedBox(height: 6),
+                const Text(
+                  'Text Size',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                ),
+                const SizedBox(height: 10),
+                const TextSizeChips(),
+              ],
+            ),
+            ),
+          ),
+          const SizedBox(height: 28),
+
           const _Label('NOTIFICATIONS & REMINDERS'),
           const SizedBox(height: 12),
           const _NotificationsSettingsSection(),
@@ -319,14 +362,8 @@ class _NotificationsSettingsSection extends ConsumerWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black, width: 2.5),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black,
-            offset: Offset(3.5, 3.5),
-            blurRadius: 0,
-          ),
-        ],
+        border: Neo.border(2.5),
+        boxShadow: Neo.shadow(3.5),
       ),
       padding: const EdgeInsets.all(16),
       child: Material(
@@ -369,7 +406,7 @@ class _NotificationsSettingsSection extends ConsumerWidget {
                   decoration: BoxDecoration(
                     color: accent,
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: Colors.black, width: 2),
+                    border: Neo.border(2),
                   ),
                   child: const Icon(
                     Icons.alarm_rounded,
@@ -390,7 +427,7 @@ class _NotificationsSettingsSection extends ConsumerWidget {
                     backgroundColor: accent,
                     foregroundColor: Colors.black,
                     elevation: 0,
-                    side: const BorderSide(color: Colors.black, width: 2),
+                    side: Neo.side(2),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),

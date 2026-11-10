@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
 import 'about_screen.dart';
@@ -7,6 +8,7 @@ import 'loading_screen.dart';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'widgets/notification_permission_sheet.dart';
+import '../core/providers/settings_provider.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -15,8 +17,26 @@ class AppShell extends ConsumerStatefulWidget {
 }
 
 class _AppShellState extends ConsumerState<AppShell> {
-  bool _isLoading = true;
+  static const _introKey = 'has_seen_intro_v1';
+
+  /// Everything is loaded before the first frame, so the animated intro only
+  /// plays on the very first launch; later launches open straight to Home.
+  late bool _isLoading = !(ref.read(sharedPreferencesProvider).getBool(_introKey) ?? false);
   int index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    if (!_isLoading) _afterIntro();
+  }
+
+  void _afterIntro() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (WidgetsBinding.instance is! WidgetsFlutterBinding) return;
+      NotificationPermissionSheet.showIfNeeded(context, ref);
+    });
+  }
   final pages = const [
     HomeScreen(),
     UnifiedStatsScreen(embedded: true),
@@ -32,11 +52,9 @@ class _AppShellState extends ConsumerState<AppShell> {
       return LoadingScreen(
         onFinished: () {
           if (mounted) {
+            ref.read(sharedPreferencesProvider).setBool(_introKey, true);
             setState(() => _isLoading = false);
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (WidgetsBinding.instance is! WidgetsFlutterBinding) return;
-              NotificationPermissionSheet.showIfNeeded(context, ref);
-            });
+            _afterIntro();
           }
         },
       );
@@ -52,8 +70,8 @@ class _AppShellState extends ConsumerState<AppShell> {
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
-          border: const Border(
-            top: BorderSide(color: Colors.black, width: 2.5),
+          border: Border(
+            top: Neo.side(2.5),
           ),
         ),
         child: NavigationBar(

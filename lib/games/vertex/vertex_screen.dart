@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
@@ -220,23 +221,9 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
           ? 'Vertex Geometry'
           : 'Vertex Geometry — Unlimited',
       showBackButton: true,
-      body: Column(
-        children: [
-          buildPracticeModeToggle(),
-          Divider(height: 1),
-
-          Padding(
-            padding: EdgeInsets.all(12),
-            child: Text(
-              'Connect dots so each dot has the number of lines shown. Tap a pair again to remove its line.',
-            ),
-          ),
-          Wrap(
-            children: [
-              TextButton.icon(
-                icon: Icon(Icons.undo),
-                label: Text('Undo'),
-                onPressed: () {
+      gameId: gameType,
+      timer: puzzleElapsed,
+      onUndo: () {
                   if (_history.isNotEmpty && !_isSolved) {
                     setState(() {
                       _userConnections
@@ -246,11 +233,7 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
                     });
                   }
                 },
-              ),
-              TextButton.icon(
-                icon: Icon(Icons.lightbulb_outline),
-                label: Text('Hint'),
-                onPressed: () {
+      onHint: () {
                   final extra = _userConnections
                       .where(
                         (e) =>
@@ -276,8 +259,16 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
                     );
                   }
                 },
-              ),
-            ],
+      body: Column(
+        children: [
+          buildPracticeModeToggle(),
+          Divider(height: 1),
+
+          Padding(
+            padding: EdgeInsets.all(12),
+            child: Text(
+              'Connect dots so each dot has the number of lines shown. Tap a pair again to remove its line.',
+            ),
           ),
           // Canvas & Interactive Graph
           Expanded(
@@ -288,10 +279,8 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
                 decoration: BoxDecoration(
                   color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: Colors.black, width: 2.5),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                  ],
+                  border: Neo.border(2.5),
+                  boxShadow: Neo.shadow(3.5),
                 ),
                 child: FittedBox(
                   child: SizedBox(
@@ -320,10 +309,8 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
                                       ? Theme.of(context).colorScheme.primary
                                       : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: Colors.black, width: 2.2),
-                                  boxShadow: const [
-                                    BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-                                  ],
+                                  border: Neo.border(2.2),
+                                  boxShadow: Neo.shadow(2),
                                 ),
                                 child: Center(
                                   child: Text(

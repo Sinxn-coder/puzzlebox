@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/theme/app_colors.dart';
+import '../../../core/theme/feedback_colors.dart';
 import '../../../core/widgets/game_mode_toggle.dart';
 import '../models/letter_state.dart';
 import '../providers/daily_five_provider.dart';
@@ -92,9 +93,9 @@ class _KeyButton extends StatelessWidget {
   Color _bg(BuildContext context, bool isDark) {
     switch (state) {
       case LetterState.correct:
-        return AppColors.correct;
+        return FeedbackColors.correct;
       case LetterState.present:
-        return AppColors.present;
+        return FeedbackColors.present;
       case LetterState.absent:
         return isDark ? Colors.grey.shade800 : Colors.grey.shade400;
       default:
@@ -103,19 +104,35 @@ class _KeyButton extends StatelessWidget {
   }
 
   Color _fg(BuildContext context, bool isDark) {
-    if (state == LetterState.correct ||
-        state == LetterState.present ||
-        state == LetterState.absent) {
+    if (state == LetterState.correct || state == LetterState.present) {
       return Colors.black;
     }
-    return Colors.black;
+    return isDark ? Colors.white : Colors.black;
+  }
+
+  String get _semanticLabel {
+    final name = switch (label) {
+      '⌫' => 'Delete',
+      'ENTER' => 'Enter',
+      _ => label,
+    };
+    return switch (state) {
+      LetterState.correct => '$name, correct spot',
+      LetterState.present => '$name, in word',
+      LetterState.absent => '$name, not in word',
+      _ => name,
+    };
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return GestureDetector(
+    return Semantics(
+      button: true,
+      label: _semanticLabel,
+      excludeSemantics: true,
+      child: GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
@@ -124,10 +141,8 @@ class _KeyButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: _bg(context, isDark),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.black, width: 1.5),
-          boxShadow: const [
-            BoxShadow(color: Colors.black, offset: Offset(1.5, 1.5), blurRadius: 0),
-          ],
+          border: Neo.border(1.5),
+          boxShadow: Neo.shadow(1.5),
         ),
         child: Center(
           child: Text(
@@ -139,6 +154,7 @@ class _KeyButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

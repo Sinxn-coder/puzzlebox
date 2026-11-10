@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 
 /// App-wide Neo-Brutalist floating top toast notification card.
@@ -146,14 +147,8 @@ class _NeoToastCardState extends State<_NeoToastCard>
                         decoration: BoxDecoration(
                           color: widget.isDark ? const Color(0xFF1E293B) : Colors.white,
                           borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.black, width: 2.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black,
-                              offset: Offset(3.5, 3.5),
-                              blurRadius: 0,
-                            ),
-                          ],
+                          border: Neo.border(2.5),
+                          boxShadow: Neo.shadow(3.5),
                         ),
                         child: Row(
                           children: [
@@ -162,7 +157,7 @@ class _NeoToastCardState extends State<_NeoToastCard>
                               decoration: BoxDecoration(
                                 color: widget.cardColor,
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.black, width: 1.8),
+                                border: Neo.border(1.8),
                               ),
                               child: Icon(widget.icon, size: 18, color: Colors.black),
                             ),

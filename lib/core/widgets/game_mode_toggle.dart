@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 
 enum GameMode { daily, practice }
 
@@ -42,10 +43,8 @@ class GameModeToggle extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF1E293B) : Colors.white,
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: Colors.black, width: 2.2),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                      ],
+                      border: Neo.border(2.2),
+                      boxShadow: Neo.shadow(2.5),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -77,10 +76,8 @@ class GameModeToggle extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: colors.primary,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.black, width: 1.8),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-                        ],
+                        border: Neo.border(1.8),
+                        boxShadow: Neo.shadow(2),
                       ),
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
@@ -133,7 +130,7 @@ class _ModeTab extends StatelessWidget {
         decoration: BoxDecoration(
           color: isSelected ? colors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(16),
-          border: isSelected ? Border.all(color: Colors.black, width: 1.5) : null,
+          border: isSelected ? Neo.border(1.5) : null,
         ),
         child: Text(
           label,

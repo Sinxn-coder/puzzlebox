@@ -7,11 +7,13 @@ String rulesFor(String title) {
         'Color Guide:\n'
         '• Green: The letter is in the word and in the correct spot.\n'
         '• Yellow: The letter is in the word but in the wrong spot.\n'
-        '• Gray: The letter is not in the word in any spot.\n\n'
+        '• Gray: The letter is not in the word in any spot.\n'
+        '• Colorblind Friendly (Settings): orange means correct spot, blue means wrong spot, and small ✓ / ⇄ marks repeat the meaning.\n\n'
         'Rules:\n'
         '• Repeated letters are counted individually. If a letter appears twice in the word, you can get two green/yellow clues for it!\n'
-        '• Easy mode uses words without any repeating letters.\n'
-        '• Hard mode includes words with repeating letters and forces you to use the clues you\'ve already discovered in subsequent guesses.';
+        '• Answers are common, well-known words. In Unlimited, a word never repeats until you have played every word at that level.\n'
+        '• Easy: five different letters and no rare letters. Hard: repeated or rare letters (J, K, Q, V, X, Z) or words with many look-alikes (like _IGHT).\n'
+        '• Daily Five Hard Mode (Settings): revealed hints must be used in later guesses.';
   }
   if (title.contains('Sudoku')) {
     return 'Objective: Fill the 9x9 grid so that every row, column, and 3x3 box contains the digits 1 through 9 exactly once.\n\n'
@@ -23,7 +25,10 @@ String rulesFor(String title) {
         'Tools:\n'
         '• Pencil Mode: Tap the pencil icon to toggle notes. When active, tapping numbers adds tiny candidate notes to the cell instead of a final answer.\n'
         '• Undo: Reverts your last move or note.\n\n'
-        'Note: Every generated puzzle has exactly one valid solution. Difficulty strictly determines how many initial clues are given on the board.';
+        'Difficulty: Every puzzle has exactly one solution and can be solved by logic alone, no guessing.\n'
+        '• Easy: singles only (a cell with one option, or a digit with one spot).\n'
+        '• Medium: also needs pairs and pointing/claiming eliminations.\n'
+        '• Hard: also needs advanced patterns such as X-Wing and XY-Wing.';
   }
   if (title.contains('Connections')) {
     return 'Objective: Group all 16 words into four separate categories of exactly four words each.\n\n'
@@ -175,7 +180,7 @@ String rulesFor(String title) {
   if (title.contains('Chess')) {
     return 'Objective: Checkmate the opponent\'s king.\n\n'
         'Game Modes:\n'
-        '• Daily Puzzles: Solve carefully crafted tactical scenarios. Find the best sequence of moves to win material or deliver checkmate.\n'
+        '• Daily Puzzles: Force checkmate. Easy puzzles are mate in one; Medium and Hard are mate in two. Any move that still forces mate counts, and a wrong move is simply taken back so you can try again.\n'
         '• Vs AI: Play a full game against an intelligent computer opponent. Choose from Easy, Medium, or Hard difficulties.\n'
         '• Pass & Play: Play a local match against a friend on the same device.\n\n'
         'How to Play:\n'

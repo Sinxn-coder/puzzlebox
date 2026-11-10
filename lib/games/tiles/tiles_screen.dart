@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
@@ -174,37 +175,31 @@ class _TilesScreenState extends ConsumerState<TilesScreen>
           ? 'Tiles Pattern Match'
           : 'Tiles Pattern Match — Unlimited',
       showBackButton: true,
-      actions: [
-        IconButton(
-          tooltip: 'Undo match',
-          icon: const Icon(Icons.undo),
-          onPressed: _history.isEmpty || _tiles.isEmpty
-              ? null
-              : () => setState(() {
-                  final previous = _history.removeLast();
-                  _tiles = previous.$1;
-                  _score = previous.$2;
-                  _comboChain = previous.$3;
-                  _firstSelected = null;
-                }),
-        ),
-        IconButton(
-          icon: Icon(Icons.lightbulb_outline),
-          tooltip: 'Hint',
-          onPressed: () {
-            if (_tiles.isEmpty) return;
-            final shape = _firstSelected?.shape ?? _tiles.first.shape;
-            final positions = _tiles
-                .asMap()
-                .entries
-                .where((e) => e.value.shape == shape)
-                .map((e) => e.key + 1);
-            showPuzzleHint(
-              'Match $shape at positions ${positions.join(" and ")} (reading left to right).',
-            );
-          },
-        ),
-      ],
+            gameId: gameType,
+      timer: puzzleElapsed,
+      undoTooltip: 'Undo match',
+      onUndo: () {
+        if (_history.isEmpty || _tiles.isEmpty) return;
+        setState(() {
+          final previous = _history.removeLast();
+          _tiles = previous.$1;
+          _score = previous.$2;
+          _comboChain = previous.$3;
+          _firstSelected = null;
+        });
+      },
+      onHint: () {
+        if (_tiles.isEmpty) return;
+        final shape = _firstSelected?.shape ?? _tiles.first.shape;
+        final positions = _tiles
+            .asMap()
+            .entries
+            .where((e) => e.value.shape == shape)
+            .map((e) => e.key + 1);
+        showPuzzleHint(
+          'Match $shape at positions ${positions.join(" and ")} (reading left to right).',
+        );
+      },
       body: Column(
         children: [
           buildPracticeModeToggle(),
@@ -296,10 +291,8 @@ class _TilesScreenState extends ConsumerState<TilesScreen>
                                     ? Theme.of(context).colorScheme.primary
                                     : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
                                 borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: Colors.black, width: 2.5),
-                                boxShadow: const [
-                                  BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                                ],
+                                border: Neo.border(2.5),
+                                boxShadow: Neo.shadow(3),
                               ),
                               child: Center(
                                 child: Text(

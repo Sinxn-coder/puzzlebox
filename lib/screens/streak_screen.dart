@@ -1,4 +1,7 @@
+import '../core/game_catalog.dart';
+import '../core/routing/game_router.dart';
 import 'dart:async';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -284,14 +287,8 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                         decoration: BoxDecoration(
                           color: cardBg,
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: Colors.black, width: 2.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black,
-                              offset: Offset(3, 3),
-                              blurRadius: 0,
-                            ),
-                          ],
+                          border: Neo.border(2.5),
+                          boxShadow: Neo.shadow(3),
                         ),
                         child: Icon(
                           Icons.arrow_back_rounded,
@@ -404,17 +401,8 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                 decoration: BoxDecoration(
                                   gradient: gradient,
                                   borderRadius: BorderRadius.circular(28),
-                                  border: Border.all(
-                                    color: Colors.black,
-                                    width: 3,
-                                  ),
-                                  boxShadow: const [
-                                    BoxShadow(
-                                      color: Colors.black,
-                                      offset: Offset(5, 5),
-                                      blurRadius: 0,
-                                    ),
-                                  ],
+                                  border: Neo.border(3),
+                                  boxShadow: Neo.shadow(5),
                                 ),
                                 child: Stack(
                                   children: [
@@ -527,17 +515,8 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                             decoration: BoxDecoration(
                               color: cardBg,
                               borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: Colors.black,
-                                width: 2.5,
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black,
-                                  offset: Offset(4, 4),
-                                  blurRadius: 0,
-                                ),
-                              ],
+                              border: Neo.border(2.5),
+                              boxShadow: Neo.shadow(4),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -567,10 +546,7 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                           alpha: 0.18,
                                         ),
                                         borderRadius: BorderRadius.circular(10),
-                                        border: Border.all(
-                                          color: Colors.black,
-                                          width: 1.5,
-                                        ),
+                                        border: Neo.border(1.5),
                                       ),
                                       child: Text(
                                         'Sun – Sat',
@@ -627,17 +603,8 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                             decoration: BoxDecoration(
                               color: cardBg,
                               borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                color: Colors.black,
-                                width: 2.5,
-                              ),
-                              boxShadow: const [
-                                BoxShadow(
-                                  color: Colors.black,
-                                  offset: Offset(3.5, 3.5),
-                                  blurRadius: 0,
-                                ),
-                              ],
+                              border: Neo.border(2.5),
+                              boxShadow: Neo.shadow(3.5),
                             ),
                             child: Row(
                               children: [
@@ -681,7 +648,7 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                             decoration: BoxDecoration(
                               color: primaryAccent.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.black, width: 2),
+                              border: Neo.border(2),
                             ),
                             child: Row(
                               children: [
@@ -694,16 +661,18 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                 ),
                                 const SizedBox(width: 10),
                                 Expanded(
-                                  child: Text(
-                                    engagement.currentStreak == 0
-                                        ? 'Solve any puzzle today to start your streak!'
-                                        : 'Keep playing daily to protect your flame!',
-                                    style: TextStyle(
-                                      fontSize: 13,
-                                      fontWeight: FontWeight.w800,
-                                      color: textColor,
-                                    ),
-                                  ),
+                                  child: engagement.playDays.isEmpty
+                                      ? _FirstStreakGuide(textColor: textColor)
+                                      : Text(
+                                          engagement.currentStreak == 0
+                                              ? 'Solve any puzzle today to start your streak!'
+                                              : 'Keep playing daily to protect your flame!',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w800,
+                                            color: textColor,
+                                          ),
+                                        ),
                                 ),
                               ],
                             ),
@@ -801,10 +770,8 @@ class _StreakCalendarView extends StatelessWidget {
       decoration: BoxDecoration(
         color: cardBg,
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: Colors.black, width: 2.5),
-        boxShadow: const [
-          BoxShadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 0),
-        ],
+        border: Neo.border(2.5),
+        boxShadow: Neo.shadow(4),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -912,13 +879,7 @@ class _StreakCalendarView extends StatelessWidget {
                     width: isToday ? 2.5 : 1.2,
                   ),
                   boxShadow: isCompleted
-                      ? const [
-                          BoxShadow(
-                            color: Colors.black,
-                            offset: Offset(1.5, 1.5),
-                            blurRadius: 0,
-                          ),
-                        ]
+                      ? Neo.shadow(1.5)
                       : null,
                 ),
                 child: Center(
@@ -967,14 +928,8 @@ class _MonthNavButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
             borderRadius: BorderRadius.circular(10),
-            border: Border.all(color: Colors.black, width: 2),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black,
-                offset: Offset(2, 2),
-                blurRadius: 0,
-              ),
-            ],
+            border: Neo.border(2),
+            boxShadow: Neo.shadow(2),
           ),
           child: Icon(
             icon,
@@ -1223,7 +1178,7 @@ class _StatMiniCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF0F172A) : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black, width: 1.5),
+        border: Neo.border(1.5),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1254,6 +1209,45 @@ class _StatMiniCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// First-run explanation of how streaks work, with a quick way to start.
+class _FirstStreakGuide extends StatelessWidget {
+  final Color textColor;
+  const _FirstStreakGuide({required this.textColor});
+
+  @override
+  Widget build(BuildContext context) {
+    final pick = GameCatalog.todaysPicks(DateTime.now()).first;
+    TextStyle style(double size, FontWeight weight) =>
+        TextStyle(fontSize: size, fontWeight: weight, color: textColor);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('No streak yet — start one today', style: style(14, FontWeight.w900)),
+        const SizedBox(height: 6),
+        for (final line in const [
+          '1. Solve any puzzle, any difficulty.',
+          '2. Come back tomorrow and solve another.',
+          '3. Each day in a row grows your flame.',
+        ])
+          Padding(
+            padding: const EdgeInsets.only(bottom: 2),
+            child: Text(line, style: style(12.5, FontWeight.w700)),
+          ),
+        const SizedBox(height: 8),
+        OutlinedButton.icon(
+          style: OutlinedButton.styleFrom(minimumSize: const Size(0, 40)),
+          onPressed: () {
+            Navigator.of(context).maybePop();
+            GameRouter.openGame(pick.id);
+          },
+          icon: const Icon(Icons.play_arrow_rounded),
+          label: Text('Play ${pick.name}'),
+        ),
+      ],
     );
   }
 }

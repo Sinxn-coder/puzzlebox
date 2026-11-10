@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/app_feedback_service.dart';
 
@@ -109,14 +110,8 @@ class _UnifiedKeyButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: bgColor ?? defaultBg,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.black, width: 1.5),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black,
-              offset: Offset(1.5, 1.5),
-              blurRadius: 0,
-            ),
-          ],
+          border: Neo.border(1.5),
+          boxShadow: Neo.shadow(1.5),
         ),
         child: Center(
           child: label == '⌫'

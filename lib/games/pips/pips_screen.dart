@@ -1,4 +1,5 @@
 import 'dart:math';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
@@ -287,6 +288,56 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
     setState(() {});
   }
 
+  @override
+  Map<String, dynamic> captureProgress() => _isSolved
+      ? {}
+      : {
+          'placed': [
+            for (final d in _boardDominoes)
+              [d.id, d.val1, d.val2, d.r1, d.c1, d.r2, d.c2, d.isVertical ? 1 : 0],
+          ],
+          'vertical': [
+            for (final d in _tray)
+              if (d.isVertical) d.id,
+          ],
+        };
+
+  @override
+  void restoreProgress(Map<String, dynamic> data) {
+    final placed = [
+      for (final raw in data['placed'] as List? ?? const [])
+        () {
+          final v = List<int>.from(raw as List);
+          return PlacedDomino(
+            id: v[0],
+            val1: v[1],
+            val2: v[2],
+            r1: v[3],
+            c1: v[4],
+            r2: v[5],
+            c2: v[6],
+            isVertical: v[7] == 1,
+          );
+        }(),
+    ];
+    final inBounds = placed.every(
+      (d) =>
+          d.r1 < _rows && d.r2 < _rows && d.c1 < _cols && d.c2 < _cols,
+    );
+    final trayIds = _tray.map((d) => d.id).toSet();
+    // Only restore a save that belongs to this exact puzzle layout.
+    if (!inBounds || !placed.every((d) => trayIds.contains(d.id))) return;
+    final placedIds = placed.map((d) => d.id).toSet();
+    final vertical = Set<int>.from(data['vertical'] as List? ?? const []);
+    _boardDominoes
+      ..clear()
+      ..addAll(placed);
+    _tray.removeWhere((d) => placedIds.contains(d.id));
+    for (final d in _tray) {
+      d.isVertical = vertical.contains(d.id);
+    }
+  }
+
   bool _isCellOccupied(int r, int c) {
     return _boardDominoes.any(
       (d) => (d.r1 == r && d.c1 == c) || (d.r2 == r && d.c2 == c),
@@ -439,6 +490,8 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
     return AppScaffold(
       title: mode == GameMode.daily ? 'Pips Logic' : 'Pips Logic — Unlimited',
       showBackButton: true,
+      gameId: gameType,
+      timer: puzzleElapsed,
       body: Column(
         children: [
           buildPracticeModeToggle(),
@@ -488,10 +541,8 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: Colors.black, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 0),
-                        ],
+                        border: Neo.border(2.5),
+                        boxShadow: Neo.shadow(4),
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(15),
@@ -522,10 +573,8 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
                                         ? const Color(0xFF4ADE80)
                                         : Colors.white,
                                     borderRadius: BorderRadius.circular(6),
-                                    border: Border.all(color: Colors.black, width: 1.5),
-                                    boxShadow: const [
-                                      BoxShadow(color: Colors.black, offset: Offset(1, 1), blurRadius: 0),
-                                    ],
+                                    border: Neo.border(1.5),
+                                    boxShadow: Neo.shadow(1),
                                   ),
                                   child: Text(
                                     '${reg.label} ${_checkRegionSatisfied(reg) ? '✓' : ''}',
@@ -792,7 +841,7 @@ class _DominoTileWidget extends StatelessWidget {
       decoration: BoxDecoration(
         color: isSelected ? const Color(0xFFFACC15) : Colors.white,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black, width: 2.2),
+        border: Neo.border(2.2),
         boxShadow: [
           BoxShadow(
             color: Colors.black,

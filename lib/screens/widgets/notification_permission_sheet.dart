@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/notification_settings_provider.dart';
 import '../../core/providers/settings_provider.dart';
@@ -34,14 +35,8 @@ class NotificationPermissionSheet extends ConsumerWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-        border: Border.all(color: Colors.black, width: 3),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black,
-            offset: Offset(0, -4),
-            blurRadius: 0,
-          ),
-        ],
+        border: Neo.border(3),
+        boxShadow: Neo.shadow(0, -4),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -64,10 +59,8 @@ class NotificationPermissionSheet extends ConsumerWidget {
             decoration: BoxDecoration(
               color: accent,
               borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: Colors.black, width: 2.5),
-              boxShadow: const [
-                BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-              ],
+              border: Neo.border(2.5),
+              boxShadow: Neo.shadow(3),
             ),
             child: const Icon(
               Icons.notifications_active_rounded,
@@ -117,10 +110,8 @@ class NotificationPermissionSheet extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: accent,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.black, width: 2.5),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                  ],
+                  border: Neo.border(2.5),
+                  boxShadow: Neo.shadow(3),
                 ),
                 child: const Text(
                   'Enable Reminders',

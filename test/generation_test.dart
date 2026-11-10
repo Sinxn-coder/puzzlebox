@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:puzzlebox/core/services/puzzle_progression.dart';
 import 'package:puzzlebox/core/services/puzzle_content.dart';
 import 'package:puzzlebox/games/sudoku/sudoku_generator.dart';
+import 'package:puzzlebox/games/sudoku/sudoku_logic.dart';
 import 'package:puzzlebox/games/crossword/crossword_generator.dart';
 import 'package:puzzlebox/games/letter_boxed/boxed_generator.dart';
 import 'package:puzzlebox/games/daily_five/logic/word_list.dart';
@@ -23,6 +24,12 @@ void main() {
           final p = generator.generate(request);
           expect(generator.validate(p), isTrue);
           expect(generator.generate(request).givens, p.givens);
+          // Graded by technique, not just clue count.
+          expect(
+            gradeSudoku(p.givens),
+            SudokuTier.values[difficulty.index],
+            reason: '$difficulty seed $seed',
+          );
           for (var i = 0; i < 9; i++) {
             expect(p.solution.sublist(i * 9, i * 9 + 9).toSet().length, 9);
             expect(

@@ -1,4 +1,5 @@
 import 'strands_solver.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'path_generator.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -301,52 +302,45 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
     return AppScaffold(
       title: mode == GameMode.daily ? 'Strands' : 'Strands — Unlimited',
       showBackButton: true,
-      actions: [
-        IconButton(
-          tooltip: 'Undo found word',
-          icon: Icon(Icons.undo),
-          onPressed: () {
-            if (_isSolved || _foundThemeWords.isEmpty) return;
-            setState(() {
-              final word = _foundThemeWords.removeLast();
-              final path = _foundPaths.remove(word)!;
-              _foundIndices.removeAll(path);
-              _spangramIndices.removeAll(path);
-              _selectedIndices.clear();
-            });
-          },
-        ),
-        AppBarIconButton(
-          icon: Icons.lightbulb_outline_rounded,
-          tooltip: 'In-App Hints',
-          onTap: () {
-            final remaining = _currentTheme.themeWords
-                .where((w) => !_foundThemeWords.contains(w))
-                .toList();
-            if (remaining.isEmpty) return;
-            final w = remaining.first;
-            final solution = solveStrands(
-              _currentTheme.grid,
-              remaining,
-              _foundIndices,
-            );
-            final path = _canonicalPaths[w] ?? solution?[w];
-            if (path == null) {
-              showPuzzleHint(
-                'Undo the last word to free a path, then try Hint again.',
-              );
-              return;
-            }
-            showPuzzleHint(
-              '$w starts at row ${path.first ~/ 6 + 1}, column ${path.first % 6 + 1}. Follow neighboring letters.',
-            );
-            setState(() {
-              _selectedIndices.clear();
-              _selectedIndices.addAll(path);
-            });
-          },
-        ),
-      ],
+            gameId: gameType,
+      timer: puzzleElapsed,
+      undoTooltip: 'Undo found word',
+      onUndo: () {
+        if (_isSolved || _foundThemeWords.isEmpty) return;
+        setState(() {
+          final word = _foundThemeWords.removeLast();
+          final path = _foundPaths.remove(word)!;
+          _foundIndices.removeAll(path);
+          _spangramIndices.removeAll(path);
+          _selectedIndices.clear();
+        });
+      },
+      onHint: () {
+        final remaining = _currentTheme.themeWords
+            .where((w) => !_foundThemeWords.contains(w))
+            .toList();
+        if (remaining.isEmpty) return;
+        final w = remaining.first;
+        final solution = solveStrands(
+          _currentTheme.grid,
+          remaining,
+          _foundIndices,
+        );
+        final path = _canonicalPaths[w] ?? solution?[w];
+        if (path == null) {
+          showPuzzleHint(
+            'Undo the last word to free a path, then try Hint again.',
+          );
+          return;
+        }
+        showPuzzleHint(
+          '$w starts at row ${path.first ~/ 6 + 1}, column ${path.first % 6 + 1}. Follow neighboring letters.',
+        );
+        setState(() {
+          _selectedIndices.clear();
+          _selectedIndices.addAll(path);
+        });
+      },
       body: Column(
         children: [
           buildPracticeModeToggle(),
@@ -417,10 +411,8 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
                       decoration: BoxDecoration(
                         color: isDark ? const Color(0xFF1E293B) : Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.black, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                        ],
+                        border: Neo.border(2.5),
+                        boxShadow: Neo.shadow(3.5),
                       ),
                       clipBehavior: Clip.antiAlias,
                       padding: const EdgeInsets.all(8),
@@ -457,10 +449,8 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
                               decoration: BoxDecoration(
                                 color: tileBg,
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.black, width: 2.0),
-                                boxShadow: const [
-                                  BoxShadow(color: Colors.black, offset: Offset(1.5, 1.5), blurRadius: 0),
-                                ],
+                                border: Neo.border(2.0),
+                                boxShadow: Neo.shadow(1.5),
                               ),
                               child: Center(
                                 child: Text(

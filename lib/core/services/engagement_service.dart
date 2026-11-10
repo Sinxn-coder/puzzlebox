@@ -133,7 +133,9 @@ class EngagementService {
     final newBest = current.bestStreak > currentStreak
         ? current.bestStreak
         : currentStreak;
-    final newPlaytime = (current.storedPlaytimeSeconds) + seconds;
+    // Play time is already accumulated live via addPlayTime; [seconds] is
+    // the solve time for this puzzle and must not be counted twice.
+    final newPlaytime = current.storedPlaytimeSeconds;
 
     await prefs.setString(
       _key,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -197,14 +198,8 @@ class _StreakEarnedScreenState extends ConsumerState<StreakEarnedScreen>
                     decoration: BoxDecoration(
                       color: cardBg,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black, width: 2.5),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Colors.black,
-                          offset: Offset(3, 3),
-                          blurRadius: 0,
-                        ),
-                      ],
+                      border: Neo.border(2.5),
+                      boxShadow: Neo.shadow(3),
                     ),
                     child: Icon(
                       Icons.close_rounded,
@@ -268,14 +263,8 @@ class _StreakEarnedScreenState extends ConsumerState<StreakEarnedScreen>
                           decoration: BoxDecoration(
                             color: accent,
                             borderRadius: BorderRadius.circular(30),
-                            border: Border.all(color: Colors.black, width: 3),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black,
-                                offset: Offset(4, 4),
-                                blurRadius: 0,
-                              ),
-                            ],
+                            border: Neo.border(3),
+                            boxShadow: Neo.shadow(4),
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
@@ -360,14 +349,8 @@ class _StreakEarnedScreenState extends ConsumerState<StreakEarnedScreen>
                         decoration: BoxDecoration(
                           color: cardBg,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.black, width: 2.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black,
-                              offset: Offset(4, 4),
-                              blurRadius: 0,
-                            ),
-                          ],
+                          border: Neo.border(2.5),
+                          boxShadow: Neo.shadow(4),
                         ),
                         child: Text(
                           widget.streak == 1
@@ -393,14 +376,8 @@ class _StreakEarnedScreenState extends ConsumerState<StreakEarnedScreen>
                           decoration: BoxDecoration(
                             color: accent,
                             borderRadius: BorderRadius.circular(18),
-                            border: Border.all(color: Colors.black, width: 3),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black,
-                                offset: Offset(4, 4),
-                                blurRadius: 0,
-                              ),
-                            ],
+                            border: Neo.border(3),
+                            boxShadow: Neo.shadow(4),
                           ),
                           child: InkWell(
                             borderRadius: BorderRadius.circular(15),

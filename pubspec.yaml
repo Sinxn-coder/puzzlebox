@@ -57,6 +57,7 @@ flutter:
     - assets/streak_orange.json
     - assets/streak_slate.json
     - assets/words/daily_five_answers.txt
+    - assets/words/daily_five_answers_v2.txt
     - assets/words/daily_five_valid.txt
     - assets/words/english.txt
     - assets/words/english-LICENSE.md

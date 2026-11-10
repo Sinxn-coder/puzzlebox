@@ -1,4 +1,4 @@
-import 'dart:math';
+import '../../../core/services/session_resume.dart';
 import '../../../core/services/puzzle_progression.dart';
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,18 +43,14 @@ class DailyFiveNotifier extends FamilyNotifier<DailyFiveState, GameMode> {
             .read(sharedPreferencesProvider)
             .getString('difficulty_daily_five') ??
         'Medium';
-    final pool = WordList.answers
-        .where(
-          (w) => difficulty == 'Easy'
-              ? w.split('').toSet().length == 5
-              : difficulty == 'Hard'
-              ? w.split('').toSet().length < 5
-              : true,
-        )
-        .toList();
-    return pool[Random(
-      ref.read(puzzleProgressionProvider).seed(_gameType),
-    ).nextInt(pool.length)];
+    final progression = ref.read(puzzleProgressionProvider);
+    // A per-install deck: every word is played once before any repeats.
+    return WordList.practiceAnswer(
+      deckSeed: progression.seed('${_gameType}_deck', progressionKey: '${_gameType}_deck'),
+      index: progression.index(_gameType),
+      difficulty: difficulty,
+      avoid: WordList.answerForPuzzle(DateService.puzzleNumber()),
+    );
   }
 
   Future<void> nextPuzzle() async {
@@ -270,6 +266,20 @@ class DailyFiveNotifier extends FamilyNotifier<DailyFiveState, GameMode> {
       'phase': state.phase.index,
     });
     await prefs.setString(key, encoded);
+    // Let Home offer "Continue" for a word that is partly guessed.
+    final modeName = isPractice ? 'practice' : 'daily';
+    final difficulty = prefs.getString('difficulty_daily_five') ?? 'Medium';
+    if (state.currentRow > 0 && !state.isComplete) {
+      await SessionResume.write(
+        prefs,
+        gameId: _gameType,
+        mode: modeName,
+        difficulty: difficulty,
+        elapsedSeconds: 0,
+      );
+    } else if (SessionResume.read(prefs, _gameType)?.mode == modeName) {
+      await SessionResume.clear(prefs, _gameType);
+    }
   }
 
   DailyFiveState? _loadSaved(int puzzleNum, {required bool isPractice}) {

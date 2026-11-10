@@ -1,10 +1,12 @@
 import 'package:flutter/foundation.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'nonogram_generator.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/services/app_feedback_service.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
 import '../../core/widgets/fixed_slot_widgets.dart';
@@ -175,18 +177,10 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
     return AppScaffold(
       title: mode == GameMode.daily ? 'Nonogram' : 'Nonogram — Unlimited',
       showBackButton: true,
-      actions: [
-        IconButton(
-          onPressed: _undo,
-          icon: const Icon(Icons.undo),
-          tooltip: 'Undo',
-        ),
-        IconButton(
-          onPressed: _hint,
-          icon: const Icon(Icons.lightbulb_outline),
-          tooltip: 'Hint',
-        ),
-      ],
+            gameId: gameType,
+      timer: puzzleElapsed,
+      onUndo: _undo,
+      onHint: _hint,
       body: _puzzle == null
           ? Column(
               children: [
@@ -206,7 +200,7 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
                               ),
                             ],
                           )
-                        : const CircularProgressIndicator(),
+                        : const SkeletonBoard(rows: 8, columns: 8),
                   ),
                 ),
               ],
@@ -417,8 +411,8 @@ class _NonogramCell extends StatelessWidget {
               color: Colors.black,
               width: bottomBorder ? 2.5 : 0.8,
             ),
-            left: const BorderSide(color: Colors.black, width: 0.5),
-            top: const BorderSide(color: Colors.black, width: 0.5),
+            left: Neo.side(0.5),
+            top: Neo.side(0.5),
           ),
         ),
         child: state == 2

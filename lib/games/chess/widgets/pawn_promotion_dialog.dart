@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:chess/chess.dart' as chess_lib;
 import 'chess_piece_widget.dart';
 
@@ -28,7 +29,7 @@ class PawnPromotionDialog extends StatelessWidget {
     return AlertDialog(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Colors.black, width: 2.5),
+        side: Neo.side(2.5),
       ),
       title: const Text(
         'Promote Pawn',
@@ -53,10 +54,8 @@ class PawnPromotionDialog extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: colors.primaryContainer.withValues(alpha: 0.35),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.black, width: 2.0),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-                        ],
+                        border: Neo.border(2.0),
+                        boxShadow: Neo.shadow(2),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,

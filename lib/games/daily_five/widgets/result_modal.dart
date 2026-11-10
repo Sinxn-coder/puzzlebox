@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:share_plus/share_plus.dart';
@@ -31,10 +32,8 @@ class ResultModal extends ConsumerWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: Colors.black, width: 2.5),
-        boxShadow: const [
-          BoxShadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 0),
-        ],
+        border: Neo.border(2.5),
+        boxShadow: Neo.shadow(4),
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -109,7 +108,7 @@ class ResultModal extends ConsumerWidget {
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Colors.black, width: 2),
+                        side: Neo.side(2),
                       ),
                     ),
                     icon: const Icon(Icons.share_rounded, size: 18),
@@ -269,7 +268,7 @@ class _DistributionChart extends StatelessWidget {
                               ? const Color(0xFF4ADE80)
                               : (isDark ? const Color(0xFF334155) : const Color(0xFFE2E8F0)),
                           borderRadius: BorderRadius.circular(6),
-                          border: Border.all(color: Colors.black, width: 1.5),
+                          border: Neo.border(1.5),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 8),

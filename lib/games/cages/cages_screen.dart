@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'cages_generator.dart';
@@ -6,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/services/app_feedback_service.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
 import '../../core/widgets/fixed_slot_widgets.dart';
@@ -204,18 +206,10 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
     return AppScaffold(
       title: mode == GameMode.daily ? 'Cages' : 'Cages — Unlimited',
       showBackButton: true,
-      actions: [
-        IconButton(
-          onPressed: _undo,
-          icon: const Icon(Icons.undo),
-          tooltip: 'Undo',
-        ),
-        IconButton(
-          onPressed: _hint,
-          icon: const Icon(Icons.lightbulb_outline),
-          tooltip: 'Hint',
-        ),
-      ],
+            gameId: gameType,
+      timer: puzzleElapsed,
+      onUndo: _undo,
+      onHint: _hint,
       body: _puzzle == null
           ? Column(
               children: [
@@ -235,7 +229,7 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
                               ),
                             ],
                           )
-                        : const CircularProgressIndicator(),
+                        : const SkeletonBoard(rows: 6, columns: 6),
                   ),
                 ),
               ],
@@ -285,10 +279,8 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
                             decoration: BoxDecoration(
                               color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.black, width: 2.5),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                              ],
+                              border: Neo.border(2.5),
+                              boxShadow: Neo.shadow(3.5),
                             ),
                             clipBehavior: Clip.antiAlias,
                             child: GridView.builder(

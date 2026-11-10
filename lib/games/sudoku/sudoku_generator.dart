@@ -1,5 +1,6 @@
 import 'dart:math';
 import '../../core/services/puzzle_progression.dart';
+import 'sudoku_logic.dart';
 
 class SudokuPuzzle {
   final List<int> givens;
@@ -60,44 +61,95 @@ int countSudokuSolutions(List<int> source, {int limit = 2}) {
 }
 
 class SudokuGenerator implements PuzzleGenerator<SudokuPuzzle> {
+  /// Technique level each difficulty must require, and the clue floor that
+  /// keeps Easy boards friendly.
+  static const _tiers = {
+    PuzzleDifficulty.easy: SudokuTier.singles,
+    PuzzleDifficulty.medium: SudokuTier.intermediate,
+    PuzzleDifficulty.hard: SudokuTier.advanced,
+  };
+  static const _minClues = {
+    PuzzleDifficulty.easy: 36,
+    PuzzleDifficulty.medium: 27,
+    PuzzleDifficulty.hard: 22,
+  };
+
   @override
   SudokuPuzzle generate(PuzzleRequest request) {
     final rand = Random(request.seed);
-    List<int> shuffled() => [0, 1, 2]..shuffle(rand);
-    final rows = [
-      for (final b in shuffled())
-        for (final r in shuffled()) b * 3 + r,
-    ];
-    final cols = [
-      for (final b in shuffled())
-        for (final c in shuffled()) b * 3 + c,
-    ];
-    final digits = List.generate(9, (i) => i + 1)..shuffle(rand);
-    final solution = [
-      for (final r in rows)
-        for (final c in cols) digits[(r * 3 + r ~/ 3 + c) % 9],
-    ];
-    final grid = List<int>.from(solution);
-    final positions = List.generate(81, (i) => i)..shuffle(rand);
-    final target = [44, 35, 28][request.difficulty.index];
-    var clues = 81;
-    for (final cell in positions) {
-      final old = grid[cell];
-      grid[cell] = 0;
-      if (countSudokuSolutions(grid) != 1) {
-        grid[cell] = old;
-      } else {
-        clues--;
+    final target = _tiers[request.difficulty]!;
+    final floor = _minClues[request.difficulty]!;
+    SudokuPuzzle? fallback;
+    var fallbackTier = -1;
+
+    for (var attempt = 0; attempt < 40; attempt++) {
+      final solution = _randomSolution(rand);
+      final grid = List<int>.from(solution);
+      // Remove symmetric pairs, like hand-made puzzles, while the puzzle stays
+      // solvable by logic no harder than the target level.
+      final order = List.generate(41, (i) => i)..shuffle(rand);
+      var clues = 81;
+      for (final cell in order) {
+        if (clues <= floor) break;
+        final mirror = 80 - cell;
+        final a = grid[cell], b = grid[mirror];
+        grid[cell] = 0;
+        grid[mirror] = 0;
+        final tier = gradeSudoku(grid);
+        if (tier == null || tier.index > target.index) {
+          grid[cell] = a;
+          grid[mirror] = b;
+        } else {
+          clues -= cell == mirror ? 1 : 2;
+        }
       }
-      if (clues <= target) break;
+      if (target == SudokuTier.advanced) {
+        // Hard boards: keep thinning single cells to reach a tougher core.
+        final singles = List.generate(81, (i) => i)..shuffle(rand);
+        for (final cell in singles) {
+          if (clues <= floor || grid[cell] == 0) continue;
+          final old = grid[cell];
+          grid[cell] = 0;
+          if (gradeSudoku(grid) == null) {
+            grid[cell] = old;
+          } else {
+            clues--;
+          }
+        }
+      }
+      final tier = gradeSudoku(grid);
+      if (tier == target) return SudokuPuzzle(grid, solution);
+      if (tier != null && tier.index > fallbackTier) {
+        fallbackTier = tier.index;
+        fallback = SudokuPuzzle(List<int>.from(grid), solution);
+      }
     }
-    return SudokuPuzzle(grid, solution);
+    // Extremely rare: return the hardest logic-solvable board found.
+    return fallback!;
+  }
+
+  static List<int> _randomSolution(Random rand) {
+    final grid = List<int>.filled(81, 0);
+    bool fill(int cell) {
+      if (cell == 81) return true;
+      final options = candidates(grid, cell)..shuffle(rand);
+      for (final n in options) {
+        grid[cell] = n;
+        if (fill(cell + 1)) return true;
+      }
+      grid[cell] = 0;
+      return false;
+    }
+
+    fill(0);
+    return grid;
   }
 
   @override
   bool validate(SudokuPuzzle puzzle) =>
       puzzle.givens.length == 81 &&
       countSudokuSolutions(puzzle.givens) == 1 &&
+      gradeSudoku(puzzle.givens) != null &&
       List.generate(81, (i) => i).every(
         (i) =>
             puzzle.solution[i] >= 1 &&

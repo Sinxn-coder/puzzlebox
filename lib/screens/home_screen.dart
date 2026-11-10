@@ -1,200 +1,46 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../core/game_catalog.dart';
 import '../core/providers/settings_provider.dart';
-import '../core/theme/app_theme.dart';
-import '../core/widgets/app_scaffold.dart';
-
-import '../core/services/practice_service.dart';
-import '../games/daily_five/widgets/daily_five_screen.dart';
-import '../games/connections/connections_screen.dart';
-import '../games/spelling_bee/spelling_bee_screen.dart';
-import '../games/crossword/crossword_screen.dart';
-import '../games/mini_crossword/mini_crossword_screen.dart';
-import '../games/sudoku/sudoku_screen.dart';
-import '../games/strands/strands_screen.dart';
-import '../games/pips/pips_screen.dart';
-import '../games/tiles/tiles_screen.dart';
-import '../games/letter_boxed/letter_boxed_screen.dart';
-import '../games/vertex/vertex_screen.dart';
-import '../games/chess/chess_screen.dart';
-import '../games/nonogram/nonogram_screen.dart';
-import '../games/binary/binary_screen.dart';
-import '../games/cages/cages_screen.dart';
-import '../core/widgets/pressable_scale.dart';
+import '../core/routing/game_router.dart';
+import '../core/services/date_service.dart';
 import '../core/services/engagement_service.dart';
+import '../core/services/practice_service.dart';
+import '../core/services/session_resume.dart';
+import '../core/theme/app_theme.dart';
+import '../core/theme/neo.dart';
+import '../core/widgets/app_scaffold.dart';
+import '../core/widgets/pressable_scale.dart';
 import 'streak_screen.dart';
 
-typedef _GameEntry = (
-  String id,
-  String title,
-  String subtitle,
-  IconData icon,
-  String category,
-  Color tabColor,
-  Widget screen,
-);
-
 const _categoryIcons = {
-  'All': Icons.apps_rounded,
   'Words': Icons.spellcheck_rounded,
   'Logic': Icons.psychology_rounded,
   'Patterns': Icons.auto_awesome_mosaic_rounded,
 };
 
+/// Home: Today's picks, then unfinished puzzles, then every game by category.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
   @override
   ConsumerState<HomeScreen> createState() => _HomeState();
 }
 
 class _HomeState extends ConsumerState<HomeScreen> {
-  String _filter = 'All';
   String _query = '';
   final TextEditingController _searchController = TextEditingController();
 
-  final _games = <_GameEntry>[
-    (
-      'chess',
-      'Chess',
-      'Tactics & vs AI practice',
-      Icons.extension_rounded,
-      'Logic',
-      const Color(0xFFFB923C),
-      const ChessScreen(),
-    ),
-    (
-      'sudoku',
-      'Sudoku',
-      'Classic 9x9 logic placement',
-      Icons.apps_rounded,
-      'Logic',
-      const Color(0xFFFACC15),
-      const SudokuScreen(),
-    ),
-    (
-      'daily_five',
-      'Daily Five',
-      '6 tries to guess 5-letter word',
-      Icons.grid_on_rounded,
-      'Words',
-      const Color(0xFF4ADE80),
-      const DailyFiveScreen(),
-    ),
-    (
-      'connections',
-      'Connections',
-      'Group 4 sets of 4 words',
-      Icons.hub_rounded,
-      'Words',
-      const Color(0xFFF43F5E),
-      const ConnectionsScreen(),
-    ),
-    (
-      'mini_crossword',
-      'The Mini',
-      'Quick daily 5x5 crossword',
-      Icons.space_dashboard_rounded,
-      'Words',
-      const Color(0xFF38BDF8),
-      const MiniCrosswordScreen(),
-    ),
-    (
-      'spelling_bee',
-      'Spelling Bee',
-      'Spell words with 7 letters',
-      Icons.hive_rounded,
-      'Words',
-      const Color(0xFFC084FC),
-      const SpellingBeeScreen(),
-    ),
-    (
-      'crossword',
-      'Crossword',
-      'Full size crossword puzzle',
-      Icons.border_all_rounded,
-      'Words',
-      const Color(0xFFFB923C),
-      const CrosswordScreen(),
-    ),
-    (
-      'strands',
-      'Strands',
-      'Trace hidden theme words',
-      Icons.gesture_rounded,
-      'Words',
-      const Color(0xFF4ADE80),
-      const StrandsScreen(),
-    ),
-    (
-      'pips',
-      'Pips',
-      'Domino sum grid logic',
-      Icons.casino_rounded,
-      'Logic',
-      const Color(0xFFF43F5E),
-      const PipsScreen(),
-    ),
-    (
-      'tiles',
-      'Tiles',
-      'Match pattern traits',
-      Icons.layers_rounded,
-      'Patterns',
-      const Color(0xFFFACC15),
-      const TilesScreen(),
-    ),
-    (
-      'letter_boxed',
-      'Letter Boxed',
-      'Chain words around sides',
-      Icons.crop_square_rounded,
-      'Words',
-      const Color(0xFF38BDF8),
-      const LetterBoxedScreen(),
-    ),
-    (
-      'vertex',
-      'Vertex',
-      'Connect edges to balance',
-      Icons.polyline_rounded,
-      'Patterns',
-      const Color(0xFFC084FC),
-      const VertexScreen(),
-    ),
-    (
-      'nonogram',
-      'Nonogram',
-      'Picross picture logic',
-      Icons.table_chart_rounded,
-      'Patterns',
-      const Color(0xFF4ADE80),
-      const NonogramScreen(),
-    ),
-    (
-      'binary',
-      'Binary',
-      'Balance 0s and 1s in grid',
-      Icons.filter_2_rounded,
-      'Logic',
-      const Color(0xFFF43F5E),
-      const BinaryScreen(),
-    ),
-    (
-      'cages',
-      'Cages',
-      'Killer Sudoku math arithmetic',
-      Icons.calculate_rounded,
-      'Logic',
-      const Color(0xFFFACC15),
-      const CagesScreen(),
-    ),
-  ];
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
-  static const _newGames = <String>{};
-
-  Future<void> _openGame(_GameEntry game) async {
-    await Navigator.push(context, MaterialPageRoute(builder: (_) => game.$7));
+  Future<void> _openGame(GameInfo game) async {
+    final screen = GameRouter.getScreenForGameId(game.id);
+    if (screen == null) return;
+    await Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
     if (mounted) setState(() {});
   }
 
@@ -214,83 +60,114 @@ class _HomeState extends ConsumerState<HomeScreen> {
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(settingsProvider);
+    final prefs = ref.read(sharedPreferencesProvider);
     final primaryAccent = AppTheme.getAccentColor(
       const Color(0xFFFACC15),
       settings.palette,
     );
 
-    final solved = _games.fold<int>(
-      0,
-      (n, g) => n + ref.read(practiceServiceProvider).getSolvedCount(g.$1),
-    );
     ref.watch(engagementRevisionProvider);
     final engagement = ref.read(engagementServiceProvider).load();
+    final practice = ref.read(practiceServiceProvider);
+    final today = DateService.todayKey();
+    final playedToday = {
+      for (final item in engagement.history)
+        if ((item['at'] as String? ?? '').startsWith(today)) item['game'],
+    };
+    final picks = GameCatalog.todaysPicks(DateTime.now());
+    final resumable = SessionResume.all(
+      prefs,
+      GameCatalog.all.map((g) => g.id),
+    );
+    final resumeIds = {for (final r in resumable) r.gameId};
 
-    final filteredGames = _games
+    final searching = _query.trim().isNotEmpty;
+    final results = GameCatalog.all
         .where(
-          (g) =>
-              (_filter == 'All' || g.$5 == _filter) &&
-              '${g.$2} ${g.$3}'.toLowerCase().contains(_query.toLowerCase()),
+          (g) => '${g.name} ${g.tagline} ${g.category}'.toLowerCase().contains(
+            _query.trim().toLowerCase(),
+          ),
         )
         .toList();
+
+    Widget grid(List<GameInfo> games) => SliverPadding(
+      padding: const EdgeInsets.fromLTRB(20, 10, 20, 8),
+      sliver: SliverGrid(
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 240,
+          mainAxisSpacing: 22,
+          crossAxisSpacing: 14,
+          mainAxisExtent: 155,
+        ),
+        delegate: SliverChildBuilderDelegate((context, index) {
+          final game = games[index];
+          return _FolderCard(
+            game: game,
+            solvedCount: practice.getSolvedCount(game.id),
+            inProgress: resumeIds.contains(game.id),
+            onTap: () => _openGame(game),
+          );
+        }, childCount: games.length),
+      ),
+    );
 
     return Scaffold(
       backgroundColor: colors.surface,
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
-            // Neo-Brutal Header Bar (Tuckii Style)
+            // Header bar
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                 child: Row(
                   children: [
                     _NeoSquareIconButton(
                       icon: Icons.tune_rounded,
+                      tooltip: 'Display settings',
                       onPressed: _openSettings,
                       backgroundColor: primaryAccent,
                     ),
                     const Spacer(),
-                    PressableScale(
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => StreakScreen.show(context),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: primaryAccent,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.black, width: 2.5),
-                            boxShadow: const [
-                              BoxShadow(
-                                color: Colors.black,
-                                offset: Offset(3, 3),
-                                blurRadius: 0,
-                              ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.local_fire_department_rounded,
-                                size: 18,
-                                color: engagement.currentStreak > 0
-                                    ? const Color(0xFFF97316)
-                                    : Colors.black87,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                '${engagement.currentStreak}d Streak',
-                                style: const TextStyle(
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w900,
-                                  color: Colors.black,
+                    Semantics(
+                      button: true,
+                      label: '${engagement.currentStreak} day streak. Open streak details',
+                      excludeSemantics: true,
+                      child: PressableScale(
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => StreakScreen.show(context),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: primaryAccent,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Neo.border(2.5),
+                              boxShadow: Neo.shadow(3),
+                            ),
+                            child: Row(
+                              children: [
+                                Icon(
+                                  Icons.local_fire_department_rounded,
+                                  size: 18,
+                                  color: engagement.currentStreak > 0
+                                      ? const Color(0xFFF97316)
+                                      : Colors.black87,
                                 ),
-                              ),
-                            ],
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${engagement.currentStreak}d Streak',
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w900,
+                                    color: Colors.black,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -300,30 +177,155 @@ class _HomeState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Main Neo-Brutalist Bold Headline
+            // Headline
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    _greeting(),
+                    style: TextStyle(
+                      fontFamily: 'PuzzleSans',
+                      fontSize: 30,
+                      height: 1.05,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -1.0,
+                      color: colors.onSurface,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            // Today hero
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                child: _TodayCard(
+                  picks: picks,
+                  done: {
+                    for (final g in picks)
+                      if (playedToday.contains(g.id)) g.id,
+                  },
+                  accent: primaryAccent,
+                  palette: settings.palette,
+                  onOpen: _openGame,
+                ),
+              ),
+            ),
+
+            // Continue playing
+            if (resumable.isNotEmpty) ...[
+              const _SectionHeader(
+                title: 'Continue Playing',
+                icon: Icons.play_circle_outline_rounded,
+              ),
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 92,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
+                    itemCount: resumable.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 12),
+                    itemBuilder: (context, i) {
+                      final info = resumable[i];
+                      final game = GameCatalog.byId(info.gameId)!;
+                      return _ContinueCard(
+                        game: game,
+                        info: info,
+                        color: AppTheme.getAccentColor(
+                          game.color,
+                          settings.palette,
+                        ),
+                        onTap: () => _openGame(game),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 14)),
+            ],
+
+            // Search
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                child: Container(
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Neo.border(2.5),
+                    boxShadow: Neo.shadow(3),
+                  ),
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (v) => setState(() => _query = v),
+                    textAlignVertical: TextAlignVertical.center,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14.5,
+                    ),
+                    decoration: InputDecoration(
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                      hintText: 'Search puzzles...',
+                      hintStyle: TextStyle(
+                        color: colors.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 14,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search_rounded,
+                        color: isDark ? Colors.white : Colors.black,
+                        size: 22,
+                      ),
+                      suffixIcon: _query.isNotEmpty
+                          ? IconButton(
+                              tooltip: 'Clear search',
+                              icon: Icon(
+                                Icons.close_rounded,
+                                color: isDark ? Colors.white : Colors.black,
+                                size: 18,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _query = '');
+                              },
+                            )
+                          : null,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                child: Row(
                   children: [
-                    Text(
-                      'Solve now.\nPlay anytime.',
-                      style: TextStyle(
-                        fontFamily: 'PuzzleSans',
-                        fontSize: 32,
-                        height: 1.05,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -1.0,
-                        color: colors.onSurface,
+                    const Expanded(
+                      child: Text(
+                        'My Puzzles',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -.5,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 6),
                     Text(
-                      '15 hand-crafted offline logic & word puzzles.',
+                      searching
+                          ? '${results.length} found'
+                          : '${GameCatalog.all.length} games',
                       style: TextStyle(
-                        fontSize: 13.5,
-                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w800,
                         color: colors.onSurfaceVariant,
                       ),
                     ),
@@ -332,254 +334,7 @@ class _HomeState extends ConsumerState<HomeScreen> {
               ),
             ),
 
-            // Tuckii Search Box with Yellow Action Button
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 20),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1E293B)
-                              : Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.black, width: 2.5),
-                          boxShadow: const [
-                            BoxShadow(
-                              color: Colors.black,
-                              offset: Offset(3, 3),
-                              blurRadius: 0,
-                            ),
-                          ],
-                        ),
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (v) => setState(() => _query = v),
-                          textAlignVertical: TextAlignVertical.center,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 14.5,
-                          ),
-                          decoration: InputDecoration(
-                            border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(
-                              vertical: 14,
-                            ),
-                            hintText: 'Search puzzles...',
-                            hintStyle: TextStyle(
-                              color: colors.onSurfaceVariant,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 14,
-                            ),
-                            prefixIcon: const Icon(
-                              Icons.search_rounded,
-                              color: Colors.black,
-                              size: 22,
-                            ),
-                            suffixIcon: _query.isNotEmpty
-                                ? IconButton(
-                                    icon: const Icon(
-                                      Icons.close_rounded,
-                                      color: Colors.black,
-                                      size: 18,
-                                    ),
-                                    onPressed: () {
-                                      _searchController.clear();
-                                      setState(() => _query = '');
-                                    },
-                                  )
-                                : null,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: primaryAccent,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.black, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(
-                            color: Colors.black,
-                            offset: Offset(3, 3),
-                            blurRadius: 0,
-                          ),
-                        ],
-                      ),
-                      child: PopupMenuButton<String>(
-                        icon: const Icon(
-                          Icons.grid_view_rounded,
-                          color: Colors.black,
-                          size: 24,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          side: const BorderSide(color: Colors.black, width: 2),
-                        ),
-                        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                        onOpened: () {
-                          if (ref.read(settingsProvider).hapticsEnabled) {
-                            HapticFeedback.mediumImpact();
-                          }
-                        },
-                        onSelected: (String cat) {
-                          if (ref.read(settingsProvider).hapticsEnabled) {
-                            HapticFeedback.selectionClick();
-                          }
-                          setState(() {
-                            _filter = cat;
-                          });
-                        },
-                        itemBuilder: (BuildContext context) {
-                          return _categoryIcons.keys.map((String cat) {
-                            final count = cat == 'All'
-                                ? _games.length
-                                : _games.where((g) => g.$5 == cat).length;
-                            final isSelected = _filter == cat;
-                            return PopupMenuItem<String>(
-                              value: cat,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 8,
-                                ),
-                                decoration: isSelected
-                                    ? BoxDecoration(
-                                        color: primaryAccent,
-                                        borderRadius: BorderRadius.circular(12),
-                                      )
-                                    : null,
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      _categoryIcons[cat],
-                                      size: 20,
-                                      color: isSelected
-                                          ? Colors.black
-                                          : primaryAccent,
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: Text(
-                                        '$cat ($count)',
-                                        style: TextStyle(
-                                          fontWeight: isSelected
-                                              ? FontWeight.w900
-                                              : FontWeight.w700,
-                                          color: isSelected
-                                              ? Colors.black
-                                              : (isDark
-                                                    ? Colors.white
-                                                    : Colors.black),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          }).toList();
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Neo Metric Stat Strip Cards
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: _NeoStatCard(
-                        value: '$solved',
-                        label: 'Solved',
-                        color: AppTheme.getAccentColor(
-                          const Color(0xFF4ADE80),
-                          settings.palette,
-                        ),
-                        icon: Icons.check_circle_rounded,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _NeoStatCard(
-                        value: '${engagement.currentStreak}',
-                        label: 'Streak',
-                        color: AppTheme.getAccentColor(
-                          const Color(0xFFFACC15),
-                          settings.palette,
-                        ),
-                        icon: Icons.local_fire_department_rounded,
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: _NeoStatCard(
-                        value: '${_games.length}',
-                        label: 'Games',
-                        color: AppTheme.getAccentColor(
-                          const Color(0xFF38BDF8),
-                          settings.palette,
-                        ),
-                        icon: Icons.apps_rounded,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            // Category Chips Selection
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              sliver: SliverToBoxAdapter(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Flexible(
-                          child: Text(
-                            'My Puzzles',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: -.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          '${filteredGames.length} games',
-                          style: TextStyle(
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w800,
-                            color: colors.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-            ),
-
-            // Folder-Tab Grid Cards (Tuckii Neo-Brutal Style)
-            if (filteredGames.isEmpty)
+            if (searching && results.isEmpty)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 40),
@@ -592,54 +347,415 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 12),
                       Text(
-                        _query.isEmpty
-                            ? 'No games in this category yet'
-                            : 'No games match "$_query"',
+                        'No games match "$_query"',
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ],
                   ),
                 ),
               )
+            else if (searching)
+              grid(results)
             else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 36),
-                sliver: SliverGrid(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    mainAxisSpacing: 22,
-                    crossAxisSpacing: 14,
-                    mainAxisExtent: 155, // Folder Card Height
-                  ),
-                  delegate: SliverChildBuilderDelegate((context, index) {
-                    final game = filteredGames[index];
-                    final count = ref
-                        .read(practiceServiceProvider)
-                        .getSolvedCount(game.$1);
-                    return _FolderCard(
-                      game: game,
-                      solvedCount: count,
-                      isNew: _newGames.contains(game.$1),
-                      onTap: () => _openGame(game),
-                    );
-                  }, childCount: filteredGames.length),
+              for (final category in GameCatalog.categories) ...[
+                _SectionHeader(
+                  title: category,
+                  icon: _categoryIcons[category]!,
+                  trailing:
+                      '${GameCatalog.all.where((g) => g.category == category).length}',
+                ),
+                grid(
+                  GameCatalog.all
+                      .where((g) => g.category == category)
+                      .toList(),
+                ),
+              ],
+            const SliverToBoxAdapter(child: SizedBox(height: 36)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _greeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 5) return 'Late-night\npuzzling?';
+    if (hour < 12) return 'Good morning.\nReady to solve?';
+    if (hour < 18) return 'Good afternoon.\nTime for a puzzle?';
+    return 'Good evening.\nOne more puzzle?';
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final IconData icon;
+  final String? trailing;
+
+  const _SectionHeader({required this.title, required this.icon, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
+        child: Semantics(
+          header: true,
+          child: Row(
+            children: [
+              Icon(icon, size: 16, color: colors.onSurfaceVariant),
+              const SizedBox(width: 6),
+              Text(
+                title.toUpperCase(),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1.2,
+                  color: colors.onSurface,
                 ),
               ),
-          ],
+              if (trailing != null) ...[
+                const SizedBox(width: 6),
+                Text(
+                  trailing!,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w800,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-/// Neo-Brutalist Square Action Button with Hard Border & Offset Shadow
+/// Today's featured trio with a progress ring.
+class _TodayCard extends StatelessWidget {
+  final List<GameInfo> picks;
+  final Set<String> done;
+  final Color accent;
+  final int palette;
+  final ValueChanged<GameInfo> onOpen;
+
+  const _TodayCard({
+    required this.picks,
+    required this.done,
+    required this.accent,
+    required this.palette,
+    required this.onOpen,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final progress = picks.isEmpty ? 0.0 : done.length / picks.length;
+    final allDone = done.length == picks.length;
+    final weekday = const [
+      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+    ][DateTime.now().weekday - 1];
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+      decoration: BoxDecoration(
+        color: accent,
+        borderRadius: BorderRadius.circular(22),
+        border: Neo.border(2.5),
+        boxShadow: Neo.shadow(4),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'TODAY · ${weekday.toUpperCase()}',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 1.2,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      allDone ? 'All three done. Nice!' : "Today's Trio",
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -.6,
+                        color: Colors.black,
+                      ),
+                    ),
+                    Text(
+                      allDone
+                          ? 'Come back tomorrow for a new set.'
+                          : 'One word, one logic, one pattern puzzle.',
+                      style: const TextStyle(
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Semantics(
+                label: '${done.length} of ${picks.length} done today',
+                excludeSemantics: true,
+                child: SizedBox(
+                  width: 58,
+                  height: 58,
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      SizedBox.expand(
+                        child: TweenAnimationBuilder<double>(
+                          tween: Tween(begin: 0, end: progress),
+                          duration: const Duration(milliseconds: 700),
+                          curve: Curves.easeOutCubic,
+                          builder: (_, value, _) => CircularProgressIndicator(
+                            value: value,
+                            strokeWidth: 6,
+                            strokeCap: StrokeCap.round,
+                            backgroundColor: Colors.black.withValues(alpha: .12),
+                            color: Colors.black,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '${done.length}/${picks.length}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w900,
+                          fontSize: 15,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 14),
+          Row(
+            children: [
+              for (final (i, game) in picks.indexed) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(
+                  child: _TodayTile(
+                    game: game,
+                    done: done.contains(game.id),
+                    color: AppTheme.getAccentColor(game.color, palette),
+                    isDark: isDark,
+                    onTap: () => onOpen(game),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TodayTile extends StatelessWidget {
+  final GameInfo game;
+  final bool done;
+  final Color color;
+  final bool isDark;
+  final VoidCallback onTap;
+
+  const _TodayTile({
+    required this.game,
+    required this.done,
+    required this.color,
+    required this.isDark,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: '${game.name}, ${game.category}${done ? ', done today' : ''}',
+      excludeSemantics: true,
+      child: PressableScale(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(14),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 6),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(14),
+                border: Neo.border(2),
+              ),
+              child: Column(
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      GameBadge(game: game, color: color, size: 34, hero: false),
+                      if (done)
+                        Positioned(
+                          right: -6,
+                          top: -6,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF4ADE80),
+                              shape: BoxShape.circle,
+                              border: Neo.border(1.5),
+                            ),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              size: 11,
+                              color: Colors.black,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    game.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w900,
+                      color: isDark ? Colors.white : Colors.black,
+                    ),
+                  ),
+                  Text(
+                    game.category,
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: isDark
+                          ? const Color(0xFF94A3B8)
+                          : const Color(0xFF525252),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ContinueCard extends StatelessWidget {
+  final GameInfo game;
+  final ResumeInfo info;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _ContinueCard({
+    required this.game,
+    required this.info,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final details = [
+      info.isDaily ? 'Daily' : 'Unlimited',
+      if (game.id != 'chess') info.difficulty,
+      if (info.elapsedSeconds > 0) formatClock(info.elapsedSeconds),
+    ].join(' · ');
+    return Semantics(
+      button: true,
+      label: 'Continue ${game.name}, $details',
+      excludeSemantics: true,
+      child: PressableScale(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              width: 210,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Neo.border(2.5),
+                boxShadow: Neo.shadow(3),
+              ),
+              child: Row(
+                children: [
+                  GameBadge(game: game, color: color, size: 40, hero: false),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          game.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        Text(
+                          details,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF525252),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(
+                    Icons.play_arrow_rounded,
+                    color: isDark ? Colors.white : Colors.black,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Neo-Brutalist square action button with hard border and offset shadow.
 class _NeoSquareIconButton extends StatelessWidget {
   final IconData icon;
+  final String tooltip;
   final VoidCallback onPressed;
   final Color? backgroundColor;
 
   const _NeoSquareIconButton({
     required this.icon,
+    required this.tooltip,
     required this.onPressed,
     this.backgroundColor,
   });
@@ -653,13 +769,12 @@ class _NeoSquareIconButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor ?? colors.primary,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.black, width: 2.5),
-        boxShadow: const [
-          BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-        ],
+        border: Neo.border(2.5),
+        boxShadow: Neo.shadow(3),
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
+        tooltip: tooltip,
         icon: Icon(icon, color: Colors.black, size: 22),
         onPressed: onPressed,
       ),
@@ -667,244 +782,168 @@ class _NeoSquareIconButton extends StatelessWidget {
   }
 }
 
-/// Neo Stat Card Strip Tile
-class _NeoStatCard extends StatelessWidget {
-  final String value;
-  final String label;
-  final Color color;
-  final IconData icon;
-
-  const _NeoStatCard({
-    required this.value,
-    required this.label,
-    required this.color,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-      decoration: BoxDecoration(
-        color: isDark ? const Color(0xFF1E293B) : Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.black, width: 2.5),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black,
-            offset: Offset(3.5, 3.5),
-            blurRadius: 0,
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(5),
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.black, width: 1.5),
-            ),
-            child: Icon(icon, size: 16, color: Colors.black),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-              color: isDark ? Colors.white : Colors.black,
-            ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 10.5,
-              fontWeight: FontWeight.w800,
-              color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF525252),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Folder-Tab Card Widget (Exact Tuckii Folder Style)
+/// Folder-tab game card. Its icon flies into the game screen's title bar.
 class _FolderCard extends ConsumerWidget {
-  final _GameEntry game;
+  final GameInfo game;
   final int solvedCount;
-  final bool isNew;
+  final bool inProgress;
   final VoidCallback onTap;
 
   const _FolderCard({
     required this.game,
     required this.solvedCount,
-    required this.isNew,
+    required this.inProgress,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final settings = ref.watch(settingsProvider);
-    final accentColor = AppTheme.getAccentColor(game.$6, settings.palette);
+    final palette = ref.watch(settingsProvider.select((s) => s.palette));
+    final accentColor = AppTheme.getAccentColor(game.color, palette);
 
-    return PressableScale(
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: ValueKey('${game.$1}_folder'),
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Folder Main Body Card
-              Container(
-                width: double.infinity,
-                height: double.infinity,
-                margin: const EdgeInsets.only(top: 12),
-                padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                  borderRadius: const BorderRadius.only(
-                    topRight: Radius.circular(16),
-                    bottomLeft: Radius.circular(16),
-                    bottomRight: Radius.circular(16),
-                  ),
-                  border: Border.all(color: Colors.black, width: 2.5),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Colors.black,
-                      offset: Offset(4, 4),
-                      blurRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: accentColor,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.black, width: 2.0),
-                          ),
-                          child: Icon(game.$4, color: Colors.black, size: 20),
-                        ),
-                        const Spacer(),
-                        if (isNew)
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 6,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF43F5E),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: Colors.black,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Text(
-                              'NEW',
-                              style: TextStyle(
-                                fontSize: 8.5,
-                                fontWeight: FontWeight.w900,
-                                color: Colors.white,
-                              ),
-                            ),
-                          )
-                        else if (solvedCount > 0)
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF4ADE80),
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: Colors.black,
-                                width: 1.5,
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.check_rounded,
-                              size: 12,
-                              color: Colors.black,
-                            ),
-                          ),
-                      ],
-                    ),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          game.$2,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 14.5,
-                            fontWeight: FontWeight.w900,
-                            color: isDark ? Colors.white : Colors.black,
-                            letterSpacing: -.3,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          game.$3,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                            color: isDark
-                                ? const Color(0xFF94A3B8)
-                                : const Color(0xFF525252),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              // Folder Top-Left Ear/Tab
-              Positioned(
-                top: 0,
-                left: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 3,
-                  ),
+    return Semantics(
+      button: true,
+      label: [
+        game.name,
+        game.tagline,
+        if (inProgress) 'in progress, tap to continue',
+        if (solvedCount > 0) '$solvedCount solved',
+      ].join(', '),
+      excludeSemantics: true,
+      child: PressableScale(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            key: ValueKey('${game.id}_folder'),
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                // Folder body
+                Container(
+                  width: double.infinity,
+                  height: double.infinity,
+                  margin: const EdgeInsets.only(top: 12),
+                  padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
                   decoration: BoxDecoration(
-                    color: accentColor,
+                    color: isDark ? const Color(0xFF1E293B) : Colors.white,
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(10),
-                      topRight: Radius.circular(10),
+                      topRight: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
                     ),
-                    border: Border.all(color: Colors.black, width: 2.5),
+                    border: Neo.border(2.5),
+                    boxShadow: Neo.shadow(4),
                   ),
-                  child: Text(
-                    game.$5.toUpperCase(),
-                    style: const TextStyle(
-                      fontSize: 8.5,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: .5,
-                      color: Colors.black,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          GameBadge(game: game, color: accentColor),
+                          const Spacer(),
+                          if (inProgress)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 3,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF38BDF8),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Neo.border(1.5),
+                              ),
+                              child: const Text(
+                                'CONTINUE',
+                                style: TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            )
+                          else if (solvedCount > 0)
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF4ADE80),
+                                shape: BoxShape.circle,
+                                border: Neo.border(1.5),
+                              ),
+                              child: const Icon(
+                                Icons.check_rounded,
+                                size: 12,
+                                color: Colors.black,
+                              ),
+                            ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            game.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w900,
+                              color: isDark ? Colors.white : Colors.black,
+                              letterSpacing: -.3,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            game.tagline,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF525252),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Folder tab
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: accentColor,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(10),
+                        topRight: Radius.circular(10),
+                      ),
+                      border: Neo.border(2.5),
+                    ),
+                    child: Text(
+                      game.category.toUpperCase(),
+                      style: const TextStyle(
+                        fontSize: 8.5,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: .5,
+                        color: Colors.black,
+                      ),
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

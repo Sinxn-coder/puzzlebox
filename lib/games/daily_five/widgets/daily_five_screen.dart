@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/date_service.dart';
 import '../../../core/services/practice_service.dart';
+import '../../../core/services/session_resume.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../models/daily_five_state.dart';
 import '../providers/daily_five_provider.dart';
@@ -43,6 +44,12 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
             .read(sharedPreferencesProvider)
             .getString('difficulty_daily_five') ??
         'Medium';
+    // Reopen today's daily word if that is the one left unfinished.
+    final resume = SessionResume.read(
+      ref.read(sharedPreferencesProvider),
+      'daily_five',
+    );
+    if (resume != null && resume.isDaily) _mode = GameMode.daily;
   }
 
   Future<void> _loadPracticeCount() async {
@@ -96,12 +103,9 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
           ? 'Daily Five #${game.puzzleNumber}'
           : 'Daily Five — Unlimited',
       showBackButton: true,
+            gameId: 'daily_five',
+      onHint: () => _showHints(context, dateKey),
       actions: [
-        AppBarIconButton(
-          icon: Icons.lightbulb_outline_rounded,
-          tooltip: 'In-App Hints',
-          onTap: () => _showHints(context, dateKey),
-        ),
         AppBarIconButton(
           icon: Icons.bar_chart_rounded,
           tooltip: 'Stats',

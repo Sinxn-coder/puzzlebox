@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'app_colors.dart';
 
 abstract final class AppTheme {
@@ -21,7 +22,22 @@ abstract final class AppTheme {
     return neoPalettes[palette.clamp(0, neoPalettes.length - 1)];
   }
 
-  static ThemeData build(Brightness brightness, int palette) {
+  static ThemeData build(
+    Brightness brightness,
+    int palette, {
+    NeoStyle style = NeoStyle.bold,
+  }) {
+    final previousDark = Neo.dark;
+    Neo.style = style;
+    Neo.dark = brightness == Brightness.dark;
+    try {
+      return _build(brightness, palette);
+    } finally {
+      Neo.dark = previousDark;
+    }
+  }
+
+  static ThemeData _build(Brightness brightness, int palette) {
     final isDark = brightness == Brightness.dark;
     final primaryBrand = neoPalettes[palette.clamp(0, neoPalettes.length - 1)];
 
@@ -40,8 +56,8 @@ abstract final class AppTheme {
       onSurface: isDark ? AppColors.darkTextPrimary : AppColors.lightTextPrimary,
       surfaceContainerLow: isDark ? AppColors.darkSurface : AppColors.lightSurface,
       surfaceContainerHigh: isDark ? AppColors.darkSurfaceVariant : AppColors.lightSurfaceVariant,
-      outline: Colors.black,
-      outlineVariant: isDark ? Colors.white.withValues(alpha: .3) : Colors.black,
+      outline: Neo.ink,
+      outlineVariant: isDark ? Colors.white.withValues(alpha: .3) : Neo.ink,
     );
 
     return ThemeData(
@@ -79,7 +95,7 @@ abstract final class AppTheme {
         surfaceTintColor: Colors.transparent,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(18),
-          side: const BorderSide(color: Colors.black, width: 2.5),
+          side: Neo.side(2.5),
         ),
       ),
       chipTheme: ChipThemeData(
@@ -97,7 +113,7 @@ abstract final class AppTheme {
           fontSize: 13,
           color: Colors.black,
         ),
-        side: const BorderSide(color: Colors.black, width: 2.0),
+        side: Neo.side(2.0),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         showCheckmark: false,
@@ -119,7 +135,7 @@ abstract final class AppTheme {
           textStyle: const WidgetStatePropertyAll(
             TextStyle(fontFamily: 'PuzzleSans', fontWeight: FontWeight.w900, fontSize: 13),
           ),
-          side: const WidgetStatePropertyAll(BorderSide(color: Colors.black, width: 2.2)),
+          side: WidgetStatePropertyAll(Neo.side(2.2)),
           shape: WidgetStatePropertyAll(
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
@@ -132,7 +148,7 @@ abstract final class AppTheme {
         shape: WidgetStatePropertyAll(
           RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: const BorderSide(color: Colors.black, width: 2.5),
+            side: Neo.side(2.5),
           ),
         ),
         textStyle: WidgetStatePropertyAll(
@@ -156,7 +172,7 @@ abstract final class AppTheme {
             fontWeight: FontWeight.w900,
             letterSpacing: -.3,
           ),
-          side: const BorderSide(color: Colors.black, width: 2.5),
+          side: Neo.side(2.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -166,7 +182,7 @@ abstract final class AppTheme {
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(48, 50),
           foregroundColor: colors.onSurface,
-          side: const BorderSide(color: Colors.black, width: 2.5),
+          side: Neo.side(2.5),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
@@ -183,7 +199,7 @@ abstract final class AppTheme {
         contentTextStyle: const TextStyle(color: Colors.white, fontWeight: FontWeight.w900),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
-      dividerTheme: const DividerThemeData(color: Colors.black, space: 16, thickness: 2.0),
+      dividerTheme: DividerThemeData(color: Neo.ink, space: 16, thickness: Neo.width(2.0)),
       navigationBarTheme: NavigationBarThemeData(
         height: 74,
         elevation: 0,
@@ -208,7 +224,7 @@ abstract final class AppTheme {
         backgroundColor: isDark ? const Color(0xFF1E293B) : Colors.white,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
-          side: const BorderSide(color: Colors.black, width: 2.5),
+          side: Neo.side(2.5),
         ),
         titleTextStyle: TextStyle(
           fontFamily: 'PuzzleSans',

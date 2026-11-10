@@ -1,11 +1,18 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:chess/chess.dart' as chess_lib;
 import '../../core/widgets/app_scaffold.dart';
+import 'logic/mate_solver.dart';
 import '../../core/widgets/neo_toast.dart';
 import '../../core/services/app_feedback_service.dart';
 import '../../core/services/practice_service.dart';
+import '../../core/services/session_resume.dart';
+import '../../core/providers/settings_provider.dart';
 import '../../core/services/stats_service.dart';
+import '../../core/services/engagement_service.dart';
+import '../../core/widgets/streak_earned_dialog.dart';
 import '../../core/widgets/pressable_scale.dart';
 import 'models/chess_puzzle.dart';
 import 'logic/chess_puzzles_data.dart';
@@ -38,6 +45,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
   late ChessPuzzle _currentPuzzle;
   int _currentPuzzleIndex = 0;
   int _puzzleStepIndex = 0;
+  chess_lib.Color _puzzleSide = chess_lib.Color.WHITE;
   bool _puzzleCompleted = false;
 
   @override
@@ -48,6 +56,73 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
     if (_currentPuzzleIndex < 0) _currentPuzzleIndex = 0;
     _currentPuzzle = ChessPuzzlesData.getPuzzleAtIndex(_currentPuzzleIndex);
     _startVsAIGame();
+    _restoreGame();
+  }
+
+  static const _saveKey = 'chess_game_v1';
+  String? _savedSignature;
+
+  /// Reopens an unfinished vs-AI or pass-and-play game.
+  void _restoreGame() {
+    try {
+      final prefs = ref.read(sharedPreferencesProvider);
+      final raw = prefs.getString(_saveKey);
+      if (raw == null) return;
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      final fens = List<String>.from(data['fens'] as List);
+      if (fens.length < 2) return;
+      final game = chess_lib.Chess.fromFEN(fens.last);
+      _mode = data['mode'] == ChessGameMode.passAndPlay.name
+          ? ChessGameMode.passAndPlay
+          : ChessGameMode.vsAI;
+      _aiDifficulty = AIDifficulty.values.firstWhere(
+        (d) => d.name == data['ai'],
+        orElse: () => AIDifficulty.medium,
+      );
+      _game = game;
+      _fenHistory
+        ..clear()
+        ..addAll(fens);
+      _savedSignature = '${_mode.name}:${fens.length}:${fens.last}';
+      // If the AI was about to reply when the player left, let it move.
+      if (_mode == ChessGameMode.vsAI && _game.turn == chess_lib.Color.BLACK) {
+        WidgetsBinding.instance.addPostFrameCallback((_) => _makeAIMove());
+      }
+    } catch (_) {
+      /* A damaged save must never block a fresh game. */
+    }
+  }
+
+  /// Saves the live game after every change so leaving never loses it.
+  void _persistGame() {
+    if (_mode == ChessGameMode.dailyPuzzle) return;
+    final ended = _game.in_checkmate || _game.in_stalemate || _game.in_draw;
+    final signature = '${_mode.name}:${_fenHistory.length}:${_game.fen}:$ended';
+    if (signature == _savedSignature) return;
+    _savedSignature = signature;
+    final prefs = ref.read(sharedPreferencesProvider);
+    if (ended || _fenHistory.length < 2) {
+      prefs.remove(_saveKey);
+      SessionResume.clear(prefs, 'chess');
+      return;
+    }
+    prefs.setString(
+      _saveKey,
+      jsonEncode({
+        'mode': _mode.name,
+        'ai': _aiDifficulty.name,
+        'fens': _fenHistory.length > 400
+            ? _fenHistory.sublist(_fenHistory.length - 400)
+            : _fenHistory,
+      }),
+    );
+    SessionResume.write(
+      prefs,
+      gameId: 'chess',
+      mode: 'practice',
+      difficulty: _aiDifficulty.name,
+      elapsedSeconds: 0,
+    );
   }
 
   void _startDailyPuzzle() {
@@ -70,6 +145,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
     _lastMove = null;
     _isFlipped = (_game.turn == chess_lib.Color.BLACK);
     _puzzleStepIndex = 0;
+    _puzzleSide = _game.turn;
     _puzzleCompleted = false;
     _fenHistory.clear();
     _fenHistory.add(_game.fen);
@@ -203,6 +279,11 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
   }
 
   Future<void> _executeMove(String from, String to) async {
+    // In puzzles, wait for the defender's reply (or a take-back) to finish.
+    if (_mode == ChessGameMode.dailyPuzzle &&
+        (_puzzleCompleted || _game.turn != _puzzleSide)) {
+      return;
+    }
     final piece = _game.get(from);
     final isPawn = piece?.type == chess_lib.PieceType.PAWN;
     final isPromotionRank = (piece?.color == chess_lib.Color.WHITE && to.endsWith('8')) ||
@@ -263,40 +344,75 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
   }
 
   void _handleDailyPuzzleMove(String playedSan) {
-    final expectedSan = _currentPuzzle.solutionMoves[_puzzleStepIndex];
+    // Attacker moves left after this one (mate in 2 -> 1 left after the key).
+    final attackerMade = (_puzzleStepIndex ~/ 2) + 1;
+    final remaining = _currentPuzzle.mateIn - attackerMade;
+    final correct = MateSolver.moveKeepsMate(_game, remaining);
 
-    if (playedSan == expectedSan || _matchSanBase(playedSan, expectedSan)) {
-      _puzzleStepIndex++;
-      setState(() {});
-
-      if (_puzzleStepIndex >= _currentPuzzle.solutionMoves.length) {
-        _puzzleCompleted = true;
-        _recordPuzzleWin();
-        _showVictoryDialog('Puzzle Solved!', 'Great tactics! You solved puzzle #${_currentPuzzleIndex + 1}.');
-      } else {
-        // Play opponent response move automatically
-        Future.delayed(const Duration(milliseconds: 500), () {
-          if (!mounted) return;
-          final responseSan = _currentPuzzle.solutionMoves[_puzzleStepIndex];
-          _game.move(responseSan);
-          _fenHistory.add(_game.fen);
-          _puzzleStepIndex++;
-          _lastMove = null;
-          setState(() {});
-        });
-      }
-    } else {
+    if (!correct) {
+      AppFeedbackService.error(ref);
       NeoToast.show(
         context,
-        'Not the best move! Resetting board...',
+        _game.in_check
+            ? 'Check, but it lets the king escape. Try again!'
+            : 'Not quite. That lets the defence hold. Try again!',
         icon: Icons.refresh_rounded,
         color: const Color(0xFFF43F5E),
         duration: const Duration(seconds: 2),
       );
+      // Take back only the wrong move so the player keeps their progress.
       Future.delayed(const Duration(milliseconds: 600), () {
-        if (mounted) setState(() => _loadPuzzle(_currentPuzzle));
+        if (!mounted) return;
+        setState(() {
+          _game.undo_move();
+          _fenHistory.removeLast();
+          _lastMove = null;
+        });
       });
+      return;
     }
+
+    final followedLine = _puzzleStepIndex < _currentPuzzle.solutionMoves.length &&
+        _matchSanBase(playedSan, _currentPuzzle.solutionMoves[_puzzleStepIndex]);
+    _puzzleStepIndex++;
+    setState(() {});
+
+    if (_game.in_checkmate) {
+      _puzzleCompleted = true;
+      _recordPuzzleWin();
+      _showVictoryDialog(
+        'Puzzle Solved!',
+        'Great tactics! You solved puzzle #${_currentPuzzleIndex + 1}.',
+      );
+      return;
+    }
+
+    // Defender replies: the main-line move when the player followed it,
+    // otherwise the most stubborn defence the solver can find.
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (!mounted || _puzzleCompleted) return;
+      chess_lib.Move? reply;
+      final scripted = followedLine &&
+              _puzzleStepIndex < _currentPuzzle.solutionMoves.length
+          ? _currentPuzzle.solutionMoves[_puzzleStepIndex]
+          : null;
+      if (scripted != null) {
+        for (final m in _game.generate_moves()) {
+          if (_matchSanBase(_game.move_to_san(m), scripted)) {
+            reply = m;
+            break;
+          }
+        }
+      }
+      reply ??= MateSolver.stubbornReply(_game, remaining);
+      if (reply == null) return;
+      final from = chess_lib.Chess.algebraic(reply.from);
+      final to = chess_lib.Chess.algebraic(reply.to);
+      _game.make_move(reply);
+      _fenHistory.add(_game.fen);
+      _puzzleStepIndex++;
+      setState(() => _lastMove = {'from': from, 'to': to});
+    });
   }
 
   bool _matchSanBase(String a, String b) {
@@ -324,7 +440,8 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
   void _checkEndState() {
     if (_game.in_checkmate) {
       final winner = _game.turn == chess_lib.Color.WHITE ? 'Black' : 'White';
-      _recordPuzzleWin();
+      // Only a win over the AI counts; losing to it or pass-and-play does not.
+      if (_mode == ChessGameMode.vsAI && winner == 'White') _recordPuzzleWin();
       _showVictoryDialog('Checkmate!', '$winner wins the match!');
     } else if (_game.in_stalemate || _game.in_draw) {
       _showVictoryDialog('Draw!', 'The game ended in a stalemate/draw.');
@@ -338,7 +455,25 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
           todayKey: todayKey,
           won: true,
         );
-    await ref.read(practiceServiceProvider).recordSolved('chess', _currentPuzzle.id);
+    if (_mode == ChessGameMode.dailyPuzzle) {
+      await ref.read(practiceServiceProvider).recordSolved('chess', _currentPuzzle.id);
+    }
+    // Count chess wins toward the shared streak, totals and badges.
+    final difficulty = _mode == ChessGameMode.dailyPuzzle
+        ? _currentPuzzle.difficulty
+        : switch (_aiDifficulty) {
+            AIDifficulty.easy => 'Easy',
+            AIDifficulty.medium => 'Medium',
+            AIDifficulty.hard => 'Hard',
+          };
+    final engagement = await ref
+        .read(engagementServiceProvider)
+        .recordCompletion(game: 'chess', difficulty: difficulty);
+    if (!mounted) return;
+    ref.read(engagementRevisionProvider.notifier).state++;
+    if (engagement.streakEarnedToday) {
+      StreakEarnedDialog.show(context, streak: engagement.currentStreak);
+    }
   }
 
   void _showVictoryDialog(String title, String message) {
@@ -394,6 +529,22 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
 
   void _undoMove() {
     if (_fenHistory.length <= 1) return;
+    if (_mode == ChessGameMode.dailyPuzzle) {
+      if (_puzzleCompleted || _game.turn != _puzzleSide) return;
+      // Take back the player's last move and the defender's reply together.
+      setState(() {
+        _fenHistory.removeRange(
+          (_fenHistory.length - 2).clamp(1, _fenHistory.length),
+          _fenHistory.length,
+        );
+        _game = chess_lib.Chess.fromFEN(_fenHistory.last);
+        _puzzleStepIndex = _fenHistory.length - 1;
+        _lastMove = null;
+        _selectedSquare = null;
+        _validMoves = [];
+      });
+      return;
+    }
     setState(() {
       _fenHistory.removeLast();
       if (_mode == ChessGameMode.vsAI && _fenHistory.length > 1) {
@@ -408,12 +559,14 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
 
   @override
   Widget build(BuildContext context) {
+    _persistGame();
     final colors = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return AppScaffold(
       title: 'Chess',
       showBackButton: true,
+      gameId: 'chess',
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
@@ -425,10 +578,8 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: Colors.black, width: 2.5),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                ],
+                border: Neo.border(2.5),
+                boxShadow: Neo.shadow(3),
               ),
               child: Row(
                 children: [
@@ -456,10 +607,8 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                         decoration: BoxDecoration(
                           color: isDark ? const Color(0xFF1E293B) : Colors.white,
                           borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: Colors.black, width: 2.5),
-                          boxShadow: const [
-                            BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                          ],
+                          border: Neo.border(2.5),
+                          boxShadow: Neo.shadow(3.5),
                         ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -483,7 +632,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                                   decoration: BoxDecoration(
                                     color: colors.primary,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Neo.border(1.5),
                                   ),
                                   child: Text(
                                     _currentPuzzle.difficulty,
@@ -519,7 +668,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                                     decoration: BoxDecoration(
                                       color: colors.primary,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.black, width: 1.5),
+                                      border: Neo.border(1.5),
                                     ),
                                     child: const Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -545,10 +694,8 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF1E293B) : Colors.white,
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: Colors.black, width: 2.5),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                              ],
+                              border: Neo.border(2.5),
+                              boxShadow: Neo.shadow(3.5),
                             ),
                             child: Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -580,7 +727,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                                   decoration: BoxDecoration(
                                     color: colors.primary,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Neo.border(1.5),
                                   ),
                                   child: DropdownButton<AIDifficulty>(
                                     value: _aiDifficulty,
@@ -623,10 +770,8 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                             decoration: BoxDecoration(
                               color: isDark ? const Color(0xFF1E293B) : Colors.white,
                               borderRadius: BorderRadius.circular(18),
-                              border: Border.all(color: Colors.black, width: 2.5),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                              ],
+                              border: Neo.border(2.5),
+                              boxShadow: Neo.shadow(3.5),
                             ),
                             child: Row(
                               children: [
@@ -635,7 +780,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                                   decoration: BoxDecoration(
                                     color: colors.primary,
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Neo.border(1.5),
                                   ),
                                   child: const Icon(Icons.people_alt_rounded, size: 22, color: Colors.black),
                                 ),
@@ -671,7 +816,12 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
             // Top captured row (fixed 26px height - never collapses)
             SizedBox(
               height: 26,
-              child: Row(
+              child: _mode == ChessGameMode.dailyPuzzle
+                  ? Align(
+                    alignment: Alignment.centerLeft,
+                    child: const SizedBox.shrink(),
+                  )
+                  : Row(
                 children: [
                   const Text('Captured: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900)),
                   Expanded(
@@ -702,7 +852,15 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
             // Bottom captured row (fixed 26px height - never collapses)
             SizedBox(
               height: 26,
-              child: Row(
+              child: _mode == ChessGameMode.dailyPuzzle
+                  ? Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      '${_puzzleSide == chess_lib.Color.WHITE ? 'White' : 'Black'} to move',
+                      style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900),
+                    ),
+                  )
+                  : Row(
                 children: [
                   const Text('Captured: ', style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w900)),
                   Expanded(
@@ -798,7 +956,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
         decoration: BoxDecoration(
           color: isSelected ? colors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(18),
-          border: isSelected ? Border.all(color: Colors.black, width: 1.5) : null,
+          border: isSelected ? Neo.border(1.5) : null,
         ),
         child: Text(
           label,
@@ -825,10 +983,8 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
         decoration: BoxDecoration(
           color: colors.primary,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.black, width: 2.2),
-          boxShadow: const [
-            BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-          ],
+          border: Neo.border(2.2),
+          boxShadow: Neo.shadow(3),
         ),
         child: IconButton(
           icon: Icon(icon, color: Colors.black, size: 22),

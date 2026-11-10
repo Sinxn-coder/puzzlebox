@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/services/privacy_notice.dart';
@@ -38,10 +39,8 @@ class PrivacyNoticeScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black, width: 2.5),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                ],
+                border: Neo.border(2.5),
+                boxShadow: Neo.shadow(3.5),
               ),
               padding: const EdgeInsets.all(20),
               child: Row(
@@ -52,10 +51,8 @@ class PrivacyNoticeScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: accent,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.black, width: 2.5),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                      ],
+                      border: Neo.border(2.5),
+                      boxShadow: Neo.shadow(2.5),
                     ),
                     child: const Icon(
                       Icons.shield_outlined,
@@ -99,10 +96,8 @@ class PrivacyNoticeScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.black, width: 2.5),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                ],
+                border: Neo.border(2.5),
+                boxShadow: Neo.shadow(3.5),
               ),
               padding: const EdgeInsets.all(20),
               child: SelectableText(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import '../models/letter_state.dart';
+import '../../../core/theme/feedback_colors.dart';
 
 /// A single animated tile that flips to reveal its [LetterState].
 ///
@@ -98,9 +100,9 @@ class _TileWidgetState extends State<TileWidget>
   Color _bgColor(LetterState s, bool isDark) {
     switch (s) {
       case LetterState.correct:
-        return const Color(0xFF4ADE80); // Vibrant Neo Green
+        return FeedbackColors.correct;
       case LetterState.present:
-        return const Color(0xFFFACC15); // Vibrant Neo Yellow
+        return FeedbackColors.present;
       case LetterState.absent:
         return isDark ? const Color(0xFF475569) : const Color(0xFF94A3B8); // Slate grey
       default:
@@ -124,7 +126,10 @@ class _TileWidgetState extends State<TileWidget>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    return AnimatedBuilder(
+    return Semantics(
+      label: _semanticLabel(),
+      excludeSemantics: true,
+      child: AnimatedBuilder(
       animation: _flipAnim,
       builder: (context, child) {
         return Transform(
@@ -141,26 +146,46 @@ class _TileWidgetState extends State<TileWidget>
         decoration: BoxDecoration(
           color: _bgColor(_displayState, isDark),
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(
-            color: Colors.black,
-            width: 2.5,
-          ),
-          boxShadow: const [
-            BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
+          border: Neo.border(2.5),
+          boxShadow: Neo.shadow(2),
+        ),
+        child: Stack(
+          children: [
+            Center(
+              child: Text(
+                _displayLetter,
+                style: TextStyle(
+                  fontSize: widget.size * 0.48,
+                  fontWeight: FontWeight.w900,
+                  color: _textColor(_displayState, isDark),
+                  letterSpacing: 1,
+                ),
+              ),
+            ),
+            if (FeedbackColors.cueFor(
+                  correct: _displayState == LetterState.correct,
+                  present: _displayState == LetterState.present,
+                )
+                case final cue?)
+              Positioned(
+                top: 2,
+                right: 2,
+                child: Icon(cue, size: widget.size * .22, color: Colors.black),
+              ),
           ],
         ),
-        child: Center(
-          child: Text(
-            _displayLetter,
-            style: TextStyle(
-              fontSize: widget.size * 0.48,
-              fontWeight: FontWeight.w900,
-              color: _textColor(_displayState, isDark),
-              letterSpacing: 1,
-            ),
-          ),
-        ),
+      ),
       ),
     );
+  }
+
+  String _semanticLabel() {
+    if (_displayLetter.isEmpty) return 'Empty';
+    return switch (_displayState) {
+      LetterState.correct => '$_displayLetter, correct spot',
+      LetterState.present => '$_displayLetter, in word, wrong spot',
+      LetterState.absent => '$_displayLetter, not in word',
+      _ => _displayLetter,
+    };
   }
 }

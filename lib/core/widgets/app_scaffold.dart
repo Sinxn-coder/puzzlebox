@@ -1,11 +1,18 @@
 import '../services/game_rules.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/settings_provider.dart';
 import '../services/app_feedback_service.dart';
 import '../theme/app_theme.dart';
+import '../game_catalog.dart';
 
 /// Common scaffold used by all game screens and the home screen.
+///
+/// Game screens get one consistent top bar: game badge and title on the left,
+/// then (when provided) timer, undo and hint, followed by How to play and
+/// display settings. Game-specific [actions] sit just before the timer.
 class AppScaffold extends ConsumerWidget {
   final String title;
   final Widget body;
@@ -14,6 +21,16 @@ class AppScaffold extends ConsumerWidget {
   final bool showBackButton;
   final bool showInfoAction;
   final bool showSettingsAction;
+
+  /// Catalog id of the game; adds the coloured badge that flies in from Home.
+  final String? gameId;
+
+  /// Elapsed seconds for the current puzzle, shown as a timer chip.
+  final ValueListenable<int>? timer;
+  final VoidCallback? onUndo;
+  final VoidCallback? onHint;
+  final String undoTooltip;
+  final String hintTooltip;
 
   const AppScaffold({
     super.key,
@@ -24,12 +41,20 @@ class AppScaffold extends ConsumerWidget {
     this.showBackButton = false,
     this.showInfoAction = true,
     this.showSettingsAction = false,
+    this.gameId,
+    this.timer,
+    this.onUndo,
+    this.onHint,
+    this.undoTooltip = 'Undo',
+    this.hintTooltip = 'Hint',
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = Theme.of(context).colorScheme;
     final mainTitle = title.split(' — ').first;
+    final game = GameCatalog.byId(gameId);
+    final palette = ref.watch(settingsProvider.select((s) => s.palette));
 
     final prefs = ref.read(sharedPreferencesProvider);
     final rulesKey = 'has_seen_rules_$mainTitle';
@@ -45,7 +70,7 @@ class AppScaffold extends ConsumerWidget {
             builder: (_) => AlertDialog(
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
-                side: const BorderSide(color: Colors.black, width: 2.5),
+                side: Neo.side(2.5),
               ),
               title: const Text('How to Play', style: TextStyle(fontWeight: FontWeight.w900)),
               content: ConstrainedBox(
@@ -66,56 +91,97 @@ class AppScaffold extends ConsumerWidget {
       });
     }
 
+    void showRules() => showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => GameRulesSheet(title: mainTitle, rules: rulesFor(title)),
+    );
+
+    void showSettings() => showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const SettingsSheet(),
+    );
+
     return Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
         backgroundColor: colors.surface,
         elevation: 0,
-        title: FittedBox(
-          fit: BoxFit.scaleDown,
-          alignment: Alignment.centerLeft,
-          child: Text(
-            mainTitle,
-            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
-          ),
-        ),
-        automaticallyImplyLeading: showBackButton,
-        actions: [
-          ...?actions,
-          if (showInfoAction)
-            Padding(
-              padding: const EdgeInsets.only(right: 8, left: 2),
-              child: Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: colors.primary,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.black, width: 2.0),
-                ),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  icon: const Icon(Icons.info_outline_rounded, size: 21, color: Colors.black),
-                  tooltip: 'How to play',
-                  onPressed: () => showModalBottomSheet(
-                    context: context,
-                    isScrollControlled: true,
-                    useSafeArea: true,
-                    backgroundColor: Colors.transparent,
-                    builder: (_) => GameRulesSheet(
-                      title: mainTitle,
-                      rules: rulesFor(title),
-                    ),
+        titleSpacing: showBackButton ? 0 : 16,
+        title: Row(
+          children: [
+            if (game != null) ...[
+              GameBadge(
+                game: game,
+                color: AppTheme.getAccentColor(game.color, palette),
+                size: 30,
+              ),
+              const SizedBox(width: 10),
+            ],
+            Flexible(
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Semantics(
+                  header: true,
+                  child: Text(
+                    mainTitle,
+                    style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
                   ),
                 ),
               ),
             ),
+          ],
+        ),
+        automaticallyImplyLeading: showBackButton,
+        actions: [
+          ...?actions,
+          if (timer != null) _TimerChip(seconds: timer!),
+          if (onUndo != null)
+            AppBarIconButton(
+              icon: Icons.undo_rounded,
+              tooltip: undoTooltip,
+              onTap: onUndo!,
+            ),
+          if (onHint != null)
+            AppBarIconButton(
+              icon: Icons.lightbulb_outline_rounded,
+              tooltip: hintTooltip,
+              onTap: onHint!,
+            ),
+          // Games fold rules + display settings into one menu so the bar
+          // keeps room for the timer, undo and hint on small phones.
+          if (game != null)
+            _MoreMenu(
+              onRules: showInfoAction ? showRules : null,
+              onSettings: showSettings,
+            )
+          else ...[
+            if (showInfoAction)
+              AppBarIconButton(
+                icon: Icons.info_outline_rounded,
+                tooltip: 'How to play',
+                onTap: showRules,
+              ),
+            if (showSettingsAction)
+              AppBarIconButton(
+                icon: Icons.tune_rounded,
+                tooltip: 'Display settings',
+                onTap: showSettings,
+              ),
+          ],
+          const SizedBox(width: 6),
         ],
         bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(2.5),
+          preferredSize: Size.fromHeight(Neo.width(2.5)),
           child: Container(
-            height: 2.5,
-            color: Colors.black,
+            height: Neo.width(2.5),
+            color: Neo.ink,
           ),
         ),
       ),
@@ -132,7 +198,152 @@ class AppScaffold extends ConsumerWidget {
   }
 }
 
-/// Top-right icon button used in AppBar actions.
+/// Coloured icon tile for a game; flies between Home and the game screen.
+class GameBadge extends StatelessWidget {
+  final GameInfo game;
+  final Color color;
+  final double size;
+  final bool hero;
+
+  const GameBadge({
+    super.key,
+    required this.game,
+    required this.color,
+    this.size = 38,
+    this.hero = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tile = Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(size * .32),
+        border: Neo.border(2.0),
+      ),
+      child: Icon(game.icon, color: Colors.black, size: size * .53),
+    );
+    final badge = ExcludeSemantics(child: tile);
+    if (!hero) return badge;
+    return Hero(
+      tag: game.heroTag,
+      child: Material(type: MaterialType.transparency, child: badge),
+    );
+  }
+}
+
+class _MoreMenu extends StatelessWidget {
+  final VoidCallback? onRules;
+  final VoidCallback onSettings;
+  const _MoreMenu({required this.onRules, required this.onSettings});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Container(
+      width: 38,
+      height: 38,
+      margin: const EdgeInsets.symmetric(horizontal: 2),
+      decoration: BoxDecoration(
+        color: colors.primary,
+        borderRadius: BorderRadius.circular(12),
+        border: Neo.border(2.0),
+      ),
+      child: PopupMenuButton<VoidCallback>(
+        padding: EdgeInsets.zero,
+        tooltip: 'More options',
+        icon: const Icon(Icons.more_vert_rounded, size: 20, color: Colors.black),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(14),
+          side: Neo.side(2),
+        ),
+        onSelected: (action) => action(),
+        itemBuilder: (_) => [
+          if (onRules != null)
+            PopupMenuItem(
+              value: onRules,
+              child: const _MenuRow(Icons.info_outline_rounded, 'How to play'),
+            ),
+          PopupMenuItem(
+            value: onSettings,
+            child: const _MenuRow(Icons.tune_rounded, 'Display settings'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MenuRow extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  const _MenuRow(this.icon, this.label);
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 20),
+      const SizedBox(width: 12),
+      Text(label, style: const TextStyle(fontWeight: FontWeight.w800)),
+    ],
+  );
+}
+
+class _TimerChip extends StatelessWidget {
+  final ValueListenable<int> seconds;
+  const _TimerChip({required this.seconds});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return ValueListenableBuilder<int>(
+      valueListenable: seconds,
+      builder: (context, value, _) {
+        return Semantics(
+          label: 'Time ${value ~/ 60} minutes ${value % 60} seconds',
+          excludeSemantics: true,
+          child: Container(
+            height: 32,
+            margin: const EdgeInsets.symmetric(horizontal: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 8),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(10),
+              border: Neo.border(2.0),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.timer_outlined, size: 14, color: isDark ? Colors.white : Colors.black),
+                const SizedBox(width: 3),
+                Text(
+                  formatClock(value),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w900,
+                    fontSize: 12.5,
+                    fontFeatures: [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+/// Formats seconds as m:ss (or h:mm:ss for long sessions).
+String formatClock(int seconds) {
+  final h = seconds ~/ 3600;
+  final m = (seconds % 3600) ~/ 60;
+  final s = (seconds % 60).toString().padLeft(2, '0');
+  return h > 0 ? '$h:${m.toString().padLeft(2, '0')}:$s' : '$m:$s';
+}
+
+// Top-right icon button used in AppBar actions.
 class AppBarIconButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
@@ -155,7 +366,7 @@ class AppBarIconButton extends StatelessWidget {
       decoration: BoxDecoration(
         color: colors.primary,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black, width: 2.0),
+        border: Neo.border(2.0),
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
@@ -201,10 +412,10 @@ class SettingsSheet extends ConsumerWidget {
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: const Border(
-              top: BorderSide(color: Colors.black, width: 3.0),
-              left: BorderSide(color: Colors.black, width: 3.0),
-              right: BorderSide(color: Colors.black, width: 3.0),
+            border: Border(
+              top: Neo.side(3.0),
+              left: Neo.side(3.0),
+              right: Neo.side(3.0),
             ),
           ),
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -233,10 +444,8 @@ class SettingsSheet extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: colors.primary,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.black, width: 2.0),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-                        ],
+                        border: Neo.border(2.0),
+                        boxShadow: Neo.shadow(2),
                       ),
                       child: const Icon(Icons.tune_rounded, size: 20, color: Colors.black),
                     ),
@@ -304,7 +513,7 @@ class SettingsSheet extends ConsumerWidget {
                                           )
                                         : null,
                                     shape: BoxShape.circle,
-                                    border: Border.all(color: Colors.black, width: 1.5),
+                                    border: Neo.border(1.5),
                                   ),
                                 ),
                                 label: Text(opt.$1),
@@ -319,10 +528,8 @@ class SettingsSheet extends ConsumerWidget {
                           decoration: BoxDecoration(
                             color: isDark ? const Color(0xFF1E293B) : Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.black, width: 2.0),
-                            boxShadow: const [
-                              BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                            ],
+                            border: Neo.border(2.0),
+                            boxShadow: Neo.shadow(2.5),
                           ),
                           padding: const EdgeInsets.all(12),
                           child: Column(
@@ -353,9 +560,45 @@ class SettingsSheet extends ConsumerWidget {
                                   },
                                 ),
                               ),
+                              Divider(color: Neo.ink, thickness: Neo.width(1.5)),
+                              _SettingRow(
+                                label: 'Soft Outlines',
+                                subtitle: 'Thinner borders and gentle shadows',
+                                child: Switch(
+                                  value: settings.neoStyle == NeoStyle.soft,
+                                  activeThumbColor: colors.primary,
+                                  onChanged: (v) => ref
+                                      .read(settingsProvider.notifier)
+                                      .setNeoStyle(v ? NeoStyle.soft : NeoStyle.bold),
+                                ),
+                              ),
+                              Divider(color: Neo.ink, thickness: Neo.width(1.5)),
+                              _SettingRow(
+                                label: 'Colorblind Friendly',
+                                subtitle: 'Blue/orange feedback with shape cues',
+                                child: Switch(
+                                  value: settings.colorblindMode,
+                                  activeThumbColor: colors.primary,
+                                  onChanged: (v) => ref
+                                      .read(settingsProvider.notifier)
+                                      .setColorblindMode(v),
+                                ),
+                              ),
                             ],
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'TEXT SIZE',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: 1.1,
+                            color: isDark ? Colors.white : Colors.black,
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        const TextSizeChips(),
                       ],
                     ),
                   ),
@@ -372,10 +615,8 @@ class SettingsSheet extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: colors.primary,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.black, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                        ],
+                        border: Neo.border(2.5),
+                        boxShadow: Neo.shadow(2.5),
                       ),
                       alignment: Alignment.center,
                       child: const Text(
@@ -394,6 +635,37 @@ class SettingsSheet extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Text size picker shared by the settings sheet and the Settings tab.
+class TextSizeChips extends ConsumerWidget {
+  const TextSizeChips({super.key});
+
+  static String _label(double scale) => switch (scale) {
+    0 => 'System',
+    1.0 => 'Default',
+    1.15 => 'Large',
+    1.3 => 'Larger',
+    _ => '${(scale * 100).round()}%',
+  };
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final current = ref.watch(settingsProvider.select((s) => s.textScale));
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: [
+        for (final option in SettingsNotifier.textScaleOptions)
+          ChoiceChip(
+            label: Text(_label(option)),
+            selected: current == option,
+            onSelected: (_) =>
+                ref.read(settingsProvider.notifier).setTextScale(option),
+          ),
+      ],
     );
   }
 }
@@ -468,10 +740,10 @@ class GameRulesSheet extends StatelessWidget {
           decoration: BoxDecoration(
             color: colors.surface,
             borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-            border: const Border(
-              top: BorderSide(color: Colors.black, width: 3.0),
-              left: BorderSide(color: Colors.black, width: 3.0),
-              right: BorderSide(color: Colors.black, width: 3.0),
+            border: Border(
+              top: Neo.side(3.0),
+              left: Neo.side(3.0),
+              right: Neo.side(3.0),
             ),
           ),
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
@@ -503,10 +775,8 @@ class GameRulesSheet extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: colors.primary,
                         borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: Colors.black, width: 2.0),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-                        ],
+                        border: Neo.border(2.0),
+                        boxShadow: Neo.shadow(2),
                       ),
                       child: const Icon(Icons.help_outline_rounded, size: 20, color: Colors.black),
                     ),
@@ -551,10 +821,8 @@ class GameRulesSheet extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF8FAFC),
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.black, width: 2.0),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                      ],
+                      border: Neo.border(2.0),
+                      boxShadow: Neo.shadow(2.5),
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
@@ -589,10 +857,8 @@ class GameRulesSheet extends StatelessWidget {
                       decoration: BoxDecoration(
                         color: colors.primary,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.black, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                        ],
+                        border: Neo.border(2.5),
+                        boxShadow: Neo.shadow(2.5),
                       ),
                       alignment: Alignment.center,
                       child: const Text(

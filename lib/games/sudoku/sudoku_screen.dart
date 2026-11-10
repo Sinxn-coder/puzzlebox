@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/foundation.dart';
 import 'sudoku_generator.dart';
 import 'package:flutter/material.dart';
@@ -7,6 +8,7 @@ import '../../core/services/stats_service.dart';
 import '../../core/services/app_feedback_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
 import '../../core/widgets/fixed_slot_widgets.dart';
@@ -22,6 +24,10 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
     with PracticeModeMixin {
   @override
   String get gameType => 'sudoku';
+
+  /// v2: technique-graded generator.
+  @override
+  int get puzzleVersion => 2;
 
   int _selectedRow = 0;
   int _selectedCol = 0;
@@ -277,19 +283,13 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
 
   @override
   Widget build(BuildContext context) {
-    final timerStr =
-        '${(_seconds ~/ 60).toString().padLeft(2, '0')}:${(_seconds % 60).toString().padLeft(2, '0')}';
-
     return AppScaffold(
       title: mode == GameMode.daily ? 'Sudoku' : 'Sudoku — Unlimited',
       showBackButton: true,
-      actions: [
-        IconButton(
-          onPressed: _hint,
-          icon: Icon(Icons.lightbulb_outline),
-          tooltip: 'Hint',
-        ),
-      ],
+            gameId: gameType,
+      timer: puzzleElapsed,
+      onUndo: _undo,
+      onHint: _hint,
       body: _solution.isEmpty
           ? Column(
               children: [
@@ -309,7 +309,7 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                               ),
                             ],
                           )
-                        : const CircularProgressIndicator(),
+                        : const SkeletonBoard(rows: 9, columns: 9),
                   ),
                 ),
               ],
@@ -339,7 +339,7 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                                 ),
                                 const SizedBox(width: 8),
                                 TabularText(
-                                  'Time $timerStr',
+                                  difficulty,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w900,
                                     color: Theme.of(context).colorScheme.primary,
@@ -367,10 +367,8 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                             decoration: BoxDecoration(
                               color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: Colors.black, width: 2.5),
-                              boxShadow: const [
-                                BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                              ],
+                              border: Neo.border(2.5),
+                              boxShadow: Neo.shadow(3.5),
                             ),
                             clipBehavior: Clip.antiAlias,
                           child: GridView.builder(
@@ -407,8 +405,8 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                                     border: Border(
                                       right: BorderSide(color: Colors.black, width: borderRight),
                                       bottom: BorderSide(color: Colors.black, width: borderBottom),
-                                      left: const BorderSide(color: Colors.black, width: 0.4),
-                                      top: const BorderSide(color: Colors.black, width: 0.4),
+                                      left: Neo.side(0.4),
+                                      top: Neo.side(0.4),
                                     ),
                                   ),
                                   child: Center(
@@ -479,8 +477,8 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                                           ? Theme.of(context).colorScheme.primary
                                           : (isDark ? const Color(0xFF1E293B) : Colors.white),
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.black, width: 2.0),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                      border: Neo.border(2.0),
+                                      boxShadow: Neo.shadow(2.5),
                                     ),
                                     child: Row(
                                       children: [
@@ -499,8 +497,8 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                                     decoration: BoxDecoration(
                                       color: isDark ? const Color(0xFF1E293B) : Colors.white,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.black, width: 2.0),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                      border: Neo.border(2.0),
+                                      boxShadow: Neo.shadow(2.5),
                                     ),
                                     child: Row(
                                       children: [
@@ -519,8 +517,8 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                                     decoration: BoxDecoration(
                                       color: isDark ? const Color(0xFF1E293B) : Colors.white,
                                       borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: Colors.black, width: 2.0),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                      border: Neo.border(2.0),
+                                      boxShadow: Neo.shadow(2.5),
                                     ),
                                     child: Text('Erase', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: controlColor)),
                                   ),
@@ -542,8 +540,8 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.black, width: 2.0),
-                                boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                border: Neo.border(2.0),
+                                boxShadow: Neo.shadow(2.5),
                               ),
                               child: Row(
                                 children: const [
@@ -581,10 +579,8 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                               decoration: BoxDecoration(
                                 color: Theme.of(context).colorScheme.primary,
                                 borderRadius: BorderRadius.circular(10),
-                                border: Border.all(color: Colors.black, width: 2.0),
-                                boxShadow: const [
-                                  BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-                                ],
+                                border: Neo.border(2.0),
+                                boxShadow: Neo.shadow(2),
                               ),
                               child: Center(
                                 child: Text(

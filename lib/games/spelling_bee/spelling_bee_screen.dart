@@ -1,4 +1,5 @@
 import '../daily_five/logic/word_list.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import '../../core/services/puzzle_content.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
@@ -222,26 +223,24 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
           ? 'Spelling Bee'
           : 'Spelling Bee — Unlimited',
       showBackButton: true,
+            gameId: gameType,
+      timer: puzzleElapsed,
+      onHint: () {
+        final words = _validDictionary.keys
+            .where((w) => !_foundWords.contains(w))
+            .toList();
+        if (words.isNotEmpty) {
+          showPuzzleHint(
+            'Try a ${words.first.length}-letter word starting ${words.first.substring(0, 2)}. ${clueBank[words.first] ?? "It uses the center letter."}',
+          );
+        }
+      },
       actions: [
-        AppBarIconButton(
-          icon: Icons.lightbulb_outline_rounded,
-          tooltip: 'In-App Hints',
-          onTap: () {
-            final words = _validDictionary.keys
-                .where((w) => !_foundWords.contains(w))
-                .toList();
-            if (words.isNotEmpty) {
-              showPuzzleHint(
-                'Try a ${words.first.length}-letter word starting ${words.first.substring(0, 2)}. ${clueBank[words.first] ?? "It uses the center letter."}',
-              );
-            }
-          },
-        ),
         if (shouldShowNextButton(_isGameComplete))
-          IconButton(
-            icon: Icon(Icons.arrow_forward_rounded),
+          AppBarIconButton(
+            icon: Icons.arrow_forward_rounded,
             tooltip: 'Next Puzzle',
-            onPressed: nextPuzzle,
+            onTap: nextPuzzle,
           ),
       ],
       body: Column(
@@ -259,8 +258,8 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                     decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.black, width: 2.5),
-                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)],
+                      border: Neo.border(2.5),
+                      boxShadow: Neo.shadow(3),
                     ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
@@ -297,7 +296,7 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                     decoration: BoxDecoration(
                       color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.black, width: 2.2),
+                      border: Neo.border(2.2),
                     ),
                     child: Text(
                       _currentInput,
@@ -395,8 +394,8 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF1E293B) : Colors.white,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: Colors.black, width: 2.2),
-                                    boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    border: Neo.border(2.2),
+                                    boxShadow: Neo.shadow(2.5),
                                   ),
                                   child: Text(
                                     'Delete',
@@ -417,8 +416,8 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                                   decoration: BoxDecoration(
                                     color: isDark ? const Color(0xFF1E293B) : Colors.white,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: Colors.black, width: 2.2),
-                                    boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    border: Neo.border(2.2),
+                                    boxShadow: Neo.shadow(2.5),
                                   ),
                                   child: Icon(Icons.refresh, color: isDark ? Colors.white : Colors.black),
                                 ),
@@ -431,8 +430,8 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
                                   decoration: BoxDecoration(
                                     color: colors.primary,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: Colors.black, width: 2.2),
-                                    boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    border: Neo.border(2.2),
+                                    boxShadow: Neo.shadow(2.5),
                                   ),
                                   child: Text(
                                     'Enter',
@@ -505,10 +504,8 @@ class _BeeTile extends StatelessWidget {
         decoration: BoxDecoration(
           color: isCenter ? colors.primary : (isDark ? const Color(0xFF1E293B) : Colors.white),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black, width: 2.5),
-          boxShadow: const [
-            BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-          ],
+          border: Neo.border(2.5),
+          boxShadow: Neo.shadow(3),
         ),
         child: Center(
           child: Text(

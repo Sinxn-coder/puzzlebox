@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'boxed_generator.dart';
 import '../daily_five/logic/word_list.dart';
 import '../../core/services/puzzle_content.dart';
@@ -6,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/widgets/app_scaffold.dart';
+import '../../core/widgets/skeleton.dart';
 import '../../core/widgets/fixed_slot_widgets.dart';
 import '../../core/widgets/game_mode_toggle.dart';
 import '../../core/widgets/neo_toast.dart';
@@ -232,13 +234,9 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
           ? 'Letter Boxed'
           : 'Letter Boxed — Unlimited',
       showBackButton: true,
-      actions: [
-        IconButton(
-          onPressed: _hint,
-          icon: Icon(Icons.lightbulb_outline),
-          tooltip: 'Hint',
-        ),
-      ],
+            gameId: gameType,
+      timer: puzzleElapsed,
+      onHint: _hint,
       body: (_loading && _top == null)
           ? Column(
               children: [
@@ -258,7 +256,7 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
                               ),
                             ],
                           )
-                        : const CircularProgressIndicator(),
+                        : const SkeletonBoard(rows: 4, columns: 4),
                   ),
                 ),
               ],
@@ -322,10 +320,8 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
                                     decoration: BoxDecoration(
                                       color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                                       borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: Colors.black, width: 2.5),
-                                      boxShadow: const [
-                                        BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                                      ],
+                                      border: Neo.border(2.5),
+                                      boxShadow: Neo.shadow(3.5),
                                     ),
                                     child: Column(
                                       mainAxisAlignment:
@@ -533,10 +529,8 @@ class _SideLetter extends StatelessWidget {
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.primary,
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.black, width: 2.2),
-          boxShadow: const [
-            BoxShadow(color: Colors.black, offset: Offset(2, 2), blurRadius: 0),
-          ],
+          border: Neo.border(2.2),
+          boxShadow: Neo.shadow(2),
         ),
         child: Center(
           child: Text(

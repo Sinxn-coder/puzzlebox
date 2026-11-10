@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -47,14 +48,8 @@ class AboutScreen extends ConsumerWidget {
               decoration: BoxDecoration(
                 color: primaryAccent,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.black, width: 2.5),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black,
-                    offset: Offset(3.5, 3.5),
-                    blurRadius: 0,
-                  ),
-                ],
+                border: Neo.border(2.5),
+                boxShadow: Neo.shadow(3.5),
               ),
               child: PuzzlePal(size: 96),
             ),
@@ -86,14 +81,8 @@ class AboutScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.black, width: 2.5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black,
-                  offset: Offset(4, 4),
-                  blurRadius: 0,
-                ),
-              ],
+              border: Neo.border(2.5),
+              boxShadow: Neo.shadow(4),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,7 +124,7 @@ class AboutScreen extends ConsumerWidget {
                           settings.palette,
                         ),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.black, width: 1.5),
+                        border: Neo.border(1.5),
                       ),
                       child: const Icon(
                         Icons.language_rounded,
@@ -174,7 +163,7 @@ class AboutScreen extends ConsumerWidget {
                           settings.palette,
                         ),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.black, width: 1.5),
+                        border: Neo.border(1.5),
                       ),
                       child: const Icon(
                         Icons.favorite_rounded,
@@ -212,14 +201,8 @@ class AboutScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.black, width: 2.5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black,
-                  offset: Offset(4, 4),
-                  blurRadius: 0,
-                ),
-              ],
+              border: Neo.border(2.5),
+              boxShadow: Neo.shadow(4),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -261,7 +244,7 @@ class AboutScreen extends ConsumerWidget {
                           settings.palette,
                         ),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.black, width: 1.5),
+                        border: Neo.border(1.5),
                       ),
                       child: const Icon(
                         Icons.language_rounded,
@@ -298,14 +281,8 @@ class AboutScreen extends ConsumerWidget {
             decoration: BoxDecoration(
               color: isDark ? const Color(0xFF1E293B) : Colors.white,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.black, width: 2.5),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black,
-                  offset: Offset(3.5, 3.5),
-                  blurRadius: 0,
-                ),
-              ],
+              border: Neo.border(2.5),
+              boxShadow: Neo.shadow(3.5),
             ),
             child: Material(
               color: Colors.transparent,

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/services/stats_service.dart';
+import '../core/game_catalog.dart';
+import '../core/routing/game_router.dart';
+import 'game_stats_screen.dart';
 import '../core/services/pdf_export_service.dart';
 import '../core/widgets/app_scaffold.dart';
 import '../core/services/practice_service.dart';
@@ -25,22 +29,15 @@ class UnifiedStatsScreen extends ConsumerWidget {
     final primaryAccent = AppTheme.getAccentColor(const Color(0xFFFACC15), settings.palette);
 
     final games = [
-      {'type': 'daily_five', 'name': 'Daily Five', 'icon': Icons.grid_on_rounded, 'color': const Color(0xFF4ADE80)},
-      {'type': 'connections', 'name': 'Connections', 'icon': Icons.hub_rounded, 'color': const Color(0xFFF43F5E)},
-      {'type': 'spelling_bee', 'name': 'Spelling Bee', 'icon': Icons.hive_rounded, 'color': const Color(0xFFFACC15)},
-      {'type': 'crossword', 'name': 'The Crossword', 'icon': Icons.border_all_rounded, 'color': const Color(0xFF38BDF8)},
-      {'type': 'mini_crossword', 'name': 'The Mini', 'icon': Icons.space_dashboard_rounded, 'color': const Color(0xFFC084FC)},
-      {'type': 'strands', 'name': 'Strands', 'icon': Icons.gesture_rounded, 'color': const Color(0xFFFB923C)},
-      {'type': 'sudoku', 'name': 'Sudoku', 'icon': Icons.apps_rounded, 'color': const Color(0xFF4ADE80)},
-      {'type': 'pips', 'name': 'Pips', 'icon': Icons.casino_rounded, 'color': const Color(0xFFF43F5E)},
-      {'type': 'tiles', 'name': 'Tiles', 'icon': Icons.layers_rounded, 'color': const Color(0xFFFACC15)},
-      {'type': 'letter_boxed', 'name': 'Letter Boxed', 'icon': Icons.crop_square_rounded, 'color': const Color(0xFF38BDF8)},
-      {'type': 'vertex', 'name': 'Vertex', 'icon': Icons.polyline_rounded, 'color': const Color(0xFFC084FC)},
-      {'type': 'chess', 'name': 'Chess', 'icon': Icons.extension_rounded, 'color': const Color(0xFFFB923C)},
-      {'type': 'nonogram', 'name': 'Nonogram', 'icon': Icons.table_chart_rounded, 'color': const Color(0xFF4ADE80)},
-      {'type': 'binary', 'name': 'Binary', 'icon': Icons.filter_2_rounded, 'color': const Color(0xFFF43F5E)},
-      {'type': 'cages', 'name': 'Cages', 'icon': Icons.calculate_rounded, 'color': const Color(0xFFFACC15)},
+      for (final g in GameCatalog.all)
+        {'type': g.id, 'name': g.name, 'icon': g.icon, 'color': g.color},
     ];
+    final isFirstRun = engagement.totalCompleted == 0 &&
+        engagement.history.isEmpty &&
+        GameCatalog.all.every(
+          (g) => statsService.loadStats(g.id).gamesPlayed == 0 &&
+              practice.getSolvedCount(g.id) == 0,
+        );
 
     final content = SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 100),
@@ -56,10 +53,8 @@ class UnifiedStatsScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: primaryAccent,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black, width: 2.5),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                  ],
+                  border: Neo.border(2.5),
+                  boxShadow: Neo.shadow(3),
                 ),
                 alignment: Alignment.center,
                 child: const Icon(Icons.bar_chart_rounded, color: Colors.black, size: 22),
@@ -111,16 +106,19 @@ class UnifiedStatsScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: primaryAccent,
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.black, width: 2.2),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                  ],
+                  border: Neo.border(2.2),
+                  boxShadow: Neo.shadow(2.5),
                 ),
                 child: _ExportButton(engagement: engagement, accentColor: primaryAccent),
               ),
             ],
           ),
           const SizedBox(height: 24),
+
+          if (isFirstRun) ...[
+            _FirstRunCard(accent: primaryAccent),
+            const SizedBox(height: 24),
+          ],
 
           // Neo Summary Metric Strip
           Row(
@@ -221,10 +219,8 @@ class UnifiedStatsScreen extends ConsumerWidget {
                 decoration: BoxDecoration(
                   color: isDark ? const Color(0xFF1E293B) : Colors.white,
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.black, width: 2.5),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                  ],
+                  border: Neo.border(2.5),
+                  boxShadow: Neo.shadow(3.5),
                 ),
                 child: Material(
                   color: Colors.transparent,
@@ -235,7 +231,7 @@ class UnifiedStatsScreen extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: gameColor,
                         shape: BoxShape.circle,
-                        border: Border.all(color: Colors.black, width: 1.5),
+                        border: Neo.border(1.5),
                       ),
                       child: const Icon(Icons.check_rounded, color: Colors.black, size: 18),
                     ),
@@ -271,16 +267,21 @@ class UnifiedStatsScreen extends ConsumerWidget {
             final gameColor = AppTheme.getAccentColor(g['color'] as Color, settings.palette);
             final winPct = st.winPercentage.round();
 
-            return Container(
+            return Semantics(
+              button: true,
+              label: '${g['name']}, win rate $winPct percent. Open details',
+              excludeSemantics: true,
+              child: GestureDetector(
+              onTap: () => GameStatsScreen.open(context, g['type'] as String),
+              behavior: HitTestBehavior.opaque,
+              child: Container(
               margin: const EdgeInsets.only(bottom: 10),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
                 color: isDark ? const Color(0xFF1E293B) : Colors.white,
                 borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: Colors.black, width: 2.2),
-                boxShadow: const [
-                  BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                ],
+                border: Neo.border(2.2),
+                boxShadow: Neo.shadow(3),
               ),
               child: Row(
                 children: [
@@ -291,7 +292,7 @@ class UnifiedStatsScreen extends ConsumerWidget {
                     decoration: BoxDecoration(
                       color: gameColor.withValues(alpha: 0.25),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.black, width: 1.8),
+                      border: Neo.border(1.8),
                     ),
                     alignment: Alignment.center,
                     child: Icon(
@@ -333,7 +334,7 @@ class UnifiedStatsScreen extends ConsumerWidget {
                           ? gameColor
                           : (isDark ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9)),
                       borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.black, width: 1.5),
+                      border: Neo.border(1.5),
                     ),
                     child: Text(
                       '$winPct%',
@@ -344,8 +345,12 @@ class UnifiedStatsScreen extends ConsumerWidget {
                       ),
                     ),
                   ),
+                  const SizedBox(width: 4),
+                  Icon(Icons.chevron_right_rounded, color: colors.onSurfaceVariant),
                 ],
               ),
+            ),
+            ),
             );
           }),
         ],
@@ -382,10 +387,8 @@ class _NeoMetricCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: isDark ? const Color(0xFF1E293B) : Colors.white,
         borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: Colors.black, width: 2.5),
-        boxShadow: const [
-          BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-        ],
+        border: Neo.border(2.5),
+        boxShadow: Neo.shadow(3.5),
       ),
       child: Column(
         children: [
@@ -394,7 +397,7 @@ class _NeoMetricCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.black, width: 1.5),
+              border: Neo.border(1.5),
             ),
             child: Icon(icon, color: Colors.black, size: 18),
           ),
@@ -448,9 +451,9 @@ class _NeoBadge extends StatelessWidget {
         decoration: BoxDecoration(
           color: unlocked ? color : (isDark ? const Color(0xFF1E293B) : Colors.white),
           borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: Colors.black, width: 2.5),
+          border: Neo.border(2.5),
           boxShadow: unlocked
-              ? const [BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0)]
+              ? Neo.shadow(3)
               : null,
         ),
         child: Column(
@@ -532,6 +535,59 @@ class _ExportButtonState extends State<_ExportButton> {
           if (mounted) setState(() => _isExporting = false);
         }
       },
+    );
+  }
+}
+
+/// Shown on the Stats tab before the player has finished any puzzle.
+class _FirstRunCard extends StatelessWidget {
+  final Color accent;
+  const _FirstRunCard({required this.accent});
+
+  @override
+  Widget build(BuildContext context) {
+    final first = GameCatalog.todaysPicks(DateTime.now()).first;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: accent,
+        borderRadius: BorderRadius.circular(20),
+        border: Neo.border(2.5),
+        boxShadow: Neo.shadow(3.5),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.insights_rounded, size: 34, color: Colors.black),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Your stats start here',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900, color: Colors.black),
+                ),
+                const SizedBox(height: 2),
+                const Text(
+                  'Finish a puzzle to unlock streaks, solve-time charts and badges.',
+                  style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: Colors.black87),
+                ),
+                const SizedBox(height: 10),
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.white,
+                    minimumSize: const Size(0, 40),
+                  ),
+                  onPressed: () => GameRouter.openGame(first.id),
+                  icon: const Icon(Icons.play_arrow_rounded),
+                  label: Text('Try ${first.name}'),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

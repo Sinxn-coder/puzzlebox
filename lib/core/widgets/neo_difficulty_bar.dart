@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 
 /// Neo-Brutalist Difficulty Selector & Next Control Bar used across all game practice modes.
 class NeoDifficultyBar extends StatelessWidget {
@@ -57,10 +58,7 @@ class NeoDifficultyBar extends StatelessWidget {
                               ? diffColor
                               : (isDark ? const Color(0xFF1E293B) : Colors.white),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: Colors.black,
-                            width: 2.0,
-                          ),
+                          border: Neo.border(2.0),
                           boxShadow: [
                             BoxShadow(
                               color: isSelected ? Colors.black : Colors.black45,
@@ -78,7 +76,7 @@ class NeoDifficultyBar extends StatelessWidget {
                               decoration: BoxDecoration(
                                 color: diffColor,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.black, width: 1.0),
+                                border: Neo.border(1.0),
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -109,14 +107,8 @@ class NeoDifficultyBar extends StatelessWidget {
               decoration: BoxDecoration(
                 color: colors.primary,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.black, width: 2.2),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black,
-                    offset: Offset(2.5, 2.5),
-                    blurRadius: 0,
-                  ),
-                ],
+                border: Neo.border(2.2),
+                boxShadow: Neo.shadow(2.5),
               ),
               child: const Row(
                 mainAxisSize: MainAxisSize.min,

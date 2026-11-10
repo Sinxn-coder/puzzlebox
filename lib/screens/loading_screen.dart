@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 
 /// A Neo-Brutalist animated loading/splash screen displayed on app startup.
 class LoadingScreen extends StatefulWidget {
@@ -105,14 +106,8 @@ class _LoadingScreenState extends State<LoadingScreen>
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.primary,
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.black, width: 2.5),
-                    boxShadow: const [
-                      BoxShadow(
-                        color: Colors.black,
-                        offset: Offset(3.5, 3.5),
-                        blurRadius: 0,
-                      ),
-                    ],
+                    border: Neo.border(2.5),
+                    boxShadow: Neo.shadow(3.5),
                   ),
                   alignment: Alignment.center,
                   child: const Icon(
@@ -150,7 +145,7 @@ class _LoadingScreenState extends State<LoadingScreen>
                           decoration: BoxDecoration(
                             color: cardColor,
                             borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: Colors.black, width: 1.8),
+                            border: Neo.border(1.8),
                           ),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(8),

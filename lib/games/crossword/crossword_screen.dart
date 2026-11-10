@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
@@ -113,6 +114,20 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
     return AppScaffold(
       title: widget.mini ? 'The Mini' : 'Crossword',
       showBackButton: true,
+      gameId: gameType,
+      timer: puzzleElapsed,
+      onUndo: () {
+        if (_history.isEmpty || _solved) return;
+        setState(() => _letters = _history.removeLast());
+      },
+      hintTooltip: 'Reveal selected letter',
+      onHint: () {
+        if (_solved) return;
+        showPuzzleHint(
+          '${_entry.clue}: selected letter is ${_puzzle.solution[_selected]}.',
+        );
+        _key(_puzzle.solution[_selected]);
+      },
       body: Column(
         children: [
           buildPracticeModeToggle(),
@@ -121,34 +136,12 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
             child: Row(
               children: [
                 Expanded(
-                  child: Text(
-                    '${_puzzle.entries.length} clues · ${_seconds ~/ 60}:${(_seconds % 60).toString().padLeft(2, "0")}',
-                    style: const TextStyle(
-                      fontFeatures: [FontFeature.tabularFigures()],
-                    ),
-                  ),
-                ),
-                IconButton(
-                  tooltip: 'Undo',
-                  icon: const Icon(Icons.undo),
-                  onPressed: _history.isEmpty || _solved
-                      ? null
-                      : () => setState(() => _letters = _history.removeLast()),
+                  child: Text('${_puzzle.entries.length} clues'),
                 ),
                 IconButton(
                   tooltip: 'Check letters',
                   icon: const Icon(Icons.fact_check_outlined),
                   onPressed: () => setState(() => _checked = !_checked),
-                ),
-                IconButton(
-                  tooltip: 'Reveal selected letter',
-                  icon: const Icon(Icons.lightbulb_outline),
-                  onPressed: () {
-                    showPuzzleHint(
-                      '${_entry.clue}: selected letter is ${_puzzle.solution[_selected]}.',
-                    );
-                    _key(_puzzle.solution[_selected]);
-                  },
                 ),
               ],
             ),
@@ -164,10 +157,8 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
                       ? const Color(0xFF1E293B)
                       : Colors.white,
                   borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.black, width: 2.2),
-                  boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                  ],
+                  border: Neo.border(2.2),
+                  boxShadow: Neo.shadow(2.5),
                 ),
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<CrosswordEntry>(
@@ -223,10 +214,8 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
                     decoration: BoxDecoration(
                       color: isDark ? const Color(0xFF1E293B) : Colors.white,
                       borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.black, width: 2.5),
-                      boxShadow: const [
-                        BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
-                      ],
+                      border: Neo.border(2.5),
+                      boxShadow: Neo.shadow(3.5),
                   ),
                   clipBehavior: Clip.antiAlias,
                   padding: const EdgeInsets.all(6),

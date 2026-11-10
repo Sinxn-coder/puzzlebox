@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../theme/neo.dart';
 
 final sharedPreferencesProvider = Provider<SharedPreferences>((ref) {
   throw UnimplementedError('Override in ProviderScope');
@@ -18,6 +19,12 @@ class SettingsNotifier extends Notifier<SettingsState> {
   static const _hapticsKey = 'settings_haptics';
   static const _hardModeKey = 'settings_hard_mode';
   static const _difficultyKey = 'settings_default_difficulty';
+  static const _neoStyleKey = 'settings_neo_style';
+  static const _textScaleKey = 'settings_text_scale';
+  static const _colorblindKey = 'settings_colorblind';
+
+  /// Text size choices offered in settings. 0 follows the system setting.
+  static const textScaleOptions = <double>[0, 1.0, 1.15, 1.3];
 
   @override
   SettingsState build() {
@@ -32,7 +39,30 @@ class SettingsNotifier extends Notifier<SettingsState> {
       hapticsEnabled: haptics,
       hardModeEnabled: hardMode,
       defaultDifficulty: defaultDifficulty,
+      neoStyle: prefs.getString(_neoStyleKey) == NeoStyle.soft.name
+          ? NeoStyle.soft
+          : NeoStyle.bold,
+      textScale: textScaleOptions.contains(prefs.getDouble(_textScaleKey))
+          ? prefs.getDouble(_textScaleKey)!
+          : 0,
+      colorblindMode: prefs.getBool(_colorblindKey) ?? false,
     );
+  }
+
+  Future<void> setNeoStyle(NeoStyle style) async {
+    await ref.read(sharedPreferencesProvider).setString(_neoStyleKey, style.name);
+    state = state.copyWith(neoStyle: style);
+  }
+
+  Future<void> setTextScale(double scale) async {
+    if (!textScaleOptions.contains(scale)) return;
+    await ref.read(sharedPreferencesProvider).setDouble(_textScaleKey, scale);
+    state = state.copyWith(textScale: scale);
+  }
+
+  Future<void> setColorblindMode(bool enabled) async {
+    await ref.read(sharedPreferencesProvider).setBool(_colorblindKey, enabled);
+    state = state.copyWith(colorblindMode: enabled);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -72,6 +102,14 @@ class SettingsState {
   final bool hapticsEnabled;
   final bool hardModeEnabled;
   final String defaultDifficulty;
+  final NeoStyle neoStyle;
+
+  /// 0 follows the system text size; otherwise a fixed scale factor.
+  final double textScale;
+
+  /// Swaps green/yellow style feedback colours for a blue/orange palette and
+  /// adds shape cues so colour is never the only signal.
+  final bool colorblindMode;
 
   const SettingsState({
     this.palette = 7,
@@ -79,6 +117,9 @@ class SettingsState {
     this.hapticsEnabled = false,
     this.hardModeEnabled = false,
     this.defaultDifficulty = 'Medium',
+    this.neoStyle = NeoStyle.bold,
+    this.textScale = 0,
+    this.colorblindMode = false,
   });
 
   SettingsState copyWith({
@@ -87,6 +128,9 @@ class SettingsState {
     bool? hapticsEnabled,
     bool? hardModeEnabled,
     String? defaultDifficulty,
+    NeoStyle? neoStyle,
+    double? textScale,
+    bool? colorblindMode,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -94,6 +138,9 @@ class SettingsState {
       hapticsEnabled: hapticsEnabled ?? this.hapticsEnabled,
       hardModeEnabled: hardModeEnabled ?? this.hardModeEnabled,
       defaultDifficulty: defaultDifficulty ?? this.defaultDifficulty,
+      neoStyle: neoStyle ?? this.neoStyle,
+      textScale: textScale ?? this.textScale,
+      colorblindMode: colorblindMode ?? this.colorblindMode,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:chess/chess.dart' as chess_lib;
 import 'chess_piece_widget.dart';
 
@@ -55,14 +56,8 @@ class ChessBoardWidget extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black, width: 2.5),
-          boxShadow: const [
-            BoxShadow(
-              color: Colors.black,
-              offset: Offset(4, 4),
-              blurRadius: 0,
-            ),
-          ],
+          border: Neo.border(2.5),
+          boxShadow: Neo.shadow(4),
         ),
         clipBehavior: Clip.antiAlias,
         child: Column(

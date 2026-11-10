@@ -1,4 +1,5 @@
 import '../../core/services/puzzle_content.dart';
+import 'package:puzzlebox/core/theme/neo.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -307,13 +308,9 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
           ? 'Connections #${DateService.puzzleNumber()}'
           : 'Connections — Unlimited',
       showBackButton: true,
-      actions: [
-        AppBarIconButton(
-          icon: Icons.lightbulb_outline_rounded,
-          tooltip: 'In-App Hints',
-          onTap: _hint,
-        ),
-      ],
+            gameId: gameType,
+      timer: puzzleElapsed,
+      onHint: _hint,
       body: Column(
         children: [
           buildPracticeModeToggle(),
@@ -342,10 +339,8 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                       decoration: BoxDecoration(
                         color: cat.color,
                         borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: Colors.black, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                        ],
+                        border: Neo.border(2.5),
+                        boxShadow: Neo.shadow(3),
                       ),
                       child: Column(
                         children: [
@@ -398,10 +393,8 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                                     ? Theme.of(context).colorScheme.primary
                                     : (isDark ? const Color(0xFF1E293B) : Colors.white),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: Colors.black, width: 2.2),
-                                boxShadow: const [
-                                  BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0),
-                                ],
+                                border: Neo.border(2.2),
+                                boxShadow: Neo.shadow(2.5),
                               ),
                               child: Center(
                                 child: Text(
@@ -447,7 +440,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                               color: i < _mistakesRemaining
                                   ? Theme.of(context).colorScheme.primary
                                   : Colors.grey.shade400,
-                              border: Border.all(color: Colors.black, width: 1.5),
+                              border: Neo.border(1.5),
                             ),
                           ),
                         ),
@@ -471,8 +464,8 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                                   decoration: BoxDecoration(
                                     color: Theme.of(context).colorScheme.primary,
                                     borderRadius: BorderRadius.circular(14),
-                                    border: Border.all(color: Colors.black, width: 2.2),
-                                    boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                    border: Neo.border(2.2),
+                                    boxShadow: Neo.shadow(2.5),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
@@ -498,8 +491,8 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                                     decoration: BoxDecoration(
                                       color: Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white,
                                       borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: Colors.black, width: 2.2),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                      border: Neo.border(2.2),
+                                      boxShadow: Neo.shadow(2.5),
                                     ),
                                     child: Text(
                                       'Shuffle',
@@ -519,8 +512,8 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                                     decoration: BoxDecoration(
                                       color: _selectedWords.isEmpty ? Colors.grey.shade300 : (Theme.of(context).brightness == Brightness.dark ? const Color(0xFF1E293B) : Colors.white),
                                       borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: Colors.black, width: 2.2),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                      border: Neo.border(2.2),
+                                      boxShadow: Neo.shadow(2.5),
                                     ),
                                     child: Text(
                                       'Deselect All',
@@ -544,8 +537,8 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
                                           ? Theme.of(context).colorScheme.primary
                                           : Colors.grey.shade400,
                                       borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(color: Colors.black, width: 2.2),
-                                      boxShadow: const [BoxShadow(color: Colors.black, offset: Offset(2.5, 2.5), blurRadius: 0)],
+                                      border: Neo.border(2.2),
+                                      boxShadow: Neo.shadow(2.5),
                                     ),
                                     child: const Text('Submit', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black)),
                                   ),
