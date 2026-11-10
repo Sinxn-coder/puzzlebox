@@ -2,6 +2,7 @@ import 'dart:async';
 import '../../../core/providers/settings_provider.dart';
 import '../models/letter_state.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/date_service.dart';
 import '../../../core/services/practice_service.dart';
@@ -16,9 +17,10 @@ import 'result_modal.dart';
 import '../../../core/widgets/game_mode_toggle.dart';
 import '../../../core/widgets/neo_toast.dart';
 import '../../../core/widgets/fixed_slot_widgets.dart';
-import '../../../core/widgets/neo_difficulty_bar.dart';
+import '../../../core/widgets/daily_done_banner.dart';
 import '../../../core/services/app_feedback_service.dart';
 import '../../../core/widgets/streak_earned_dialog.dart';
+import '../../../core/widgets/celebration_burst.dart';
 
 /// Main screen for the Daily Five word-guessing game.
 class DailyFiveScreen extends ConsumerStatefulWidget {
@@ -72,21 +74,29 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
         if (!mounted) return;
         if (game.phase == GamePhase.won) {
           AppFeedbackService.victory(ref);
+          showCelebrationBurst(context);
           if (game.streakEarnedToday) {
             StreakEarnedDialog.show(context, streak: game.earnedStreak);
           }
         } else {
           AppFeedbackService.error(ref);
         }
+        final daily = _mode == GameMode.daily;
         NeoToast.show(
           context,
           game.phase == GamePhase.won
-              ? 'Solved! A fresh word is next.'
-              : 'The word was ${game.answer}. Try the next one.',
+              ? (daily
+                    ? "Today's word solved! A new one arrives tomorrow."
+                    : 'Solved! A fresh word is next.')
+              : (daily
+                    ? 'The word was ${game.answer}. A new one arrives tomorrow.'
+                    : 'The word was ${game.answer}. Try the next one.'),
           icon: game.phase == GamePhase.won ? Icons.check_circle_rounded : Icons.info_rounded,
           color: game.phase == GamePhase.won ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8),
         );
         _nextTimer?.cancel();
+        // Daily stays on the finished board with a "done today" banner.
+        if (daily) return;
         _nextTimer = Timer(
           Duration(seconds: game.phase == GamePhase.won ? 2 : 4),
           () {
@@ -112,17 +122,19 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
           onTap: () => _showResultModal(context),
         ),
       ],
-      body: Column(
+      // Physical keyboards (tablets, Chromebooks, Bluetooth) type too.
+      body: Focus(
+        autofocus: true,
+        onKeyEvent: (node, event) => _onKey(event, game),
+        child: Column(
         children: [
-          GameModeToggle(
+          GameControlBar(
             mode: _mode,
             practiceSolvedCount: _practiceSolvedCount,
             onModeChanged: (m) => _onModeChanged(m),
-          ),
-          Divider(height: 1),
-          NeoDifficultyBar(
-            currentDifficulty: _difficulty,
+            difficulty: _difficulty,
             onDifficultyChanged: (d) async {
+              if (d == _difficulty) return;
               await ref
                   .read(sharedPreferencesProvider)
                   .setString('difficulty_daily_five', d);
@@ -130,8 +142,16 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
               setState(() => _difficulty = d);
               _next();
             },
-            onNextPressed: _next,
+            onNext: () async {
+              final started = game.currentRow > 0 && !game.isComplete;
+              if (started && !await confirmSkipPuzzle(context)) return;
+              if (mounted) _next();
+            },
           ),
+          if (_mode == GameMode.daily && game.isComplete && !game.isAnimating)
+            DailyDoneBanner(
+              onPlayUnlimited: () => _onModeChanged(GameMode.practice),
+            ),
           _ToastBar(mode: _mode),
           SizedBox(height: 12),
           Expanded(
@@ -150,7 +170,34 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
           SizedBox(height: 16),
         ],
       ),
+      ),
     );
+  }
+
+  KeyEventResult _onKey(KeyEvent event, DailyFiveState game) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+    if (game.isComplete || game.isAnimating) return KeyEventResult.ignored;
+    final notifier = ref.read(dailyFiveProvider(_mode).notifier);
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.numpadEnter) {
+      if (event is KeyDownEvent) notifier.submitGuess();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.backspace) {
+      notifier.deleteLetter();
+      return KeyEventResult.handled;
+    }
+    final char = event.character;
+    if (event is KeyDownEvent &&
+        char != null &&
+        char.length == 1 &&
+        RegExp(r'[a-zA-Z]').hasMatch(char)) {
+      notifier.addLetter(char.toUpperCase());
+      return KeyEventResult.handled;
+    }
+    return KeyEventResult.ignored;
   }
 
   void _onModeChanged(GameMode newMode) {

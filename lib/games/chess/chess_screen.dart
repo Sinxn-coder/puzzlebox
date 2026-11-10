@@ -59,6 +59,10 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
     _restoreGame();
   }
 
+  /// Current position, for tests.
+  @visibleForTesting
+  String get debugFen => _game.fen;
+
   static const _saveKey = 'chess_game_v1';
   String? _savedSignature;
 
@@ -120,7 +124,9 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
       prefs,
       gameId: 'chess',
       mode: 'practice',
-      difficulty: _aiDifficulty.name,
+      difficulty: _mode == ChessGameMode.passAndPlay
+          ? 'Pass & Play'
+          : 'Vs AI · ${_aiDifficulty.name[0].toUpperCase()}${_aiDifficulty.name.substring(1)}',
       elapsedSeconds: 0,
     );
   }
@@ -335,7 +341,12 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
       setState(() {});
       _checkEndState();
       if (!_game.in_checkmate && !_game.in_stalemate && !_game.in_draw) {
-        Future.delayed(const Duration(milliseconds: 350), _makeAIMove);
+        final board = _game;
+        Future.delayed(const Duration(milliseconds: 350), () {
+          // New game, undo or a mode switch replaces the board; never move
+          // on a board the player did not just play on.
+          if (identical(board, _game)) _makeAIMove();
+        });
       }
     } else {
       setState(() {});
@@ -361,8 +372,9 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
         duration: const Duration(seconds: 2),
       );
       // Take back only the wrong move so the player keeps their progress.
+      final board = _game;
       Future.delayed(const Duration(milliseconds: 600), () {
-        if (!mounted) return;
+        if (!mounted || !identical(board, _game)) return;
         setState(() {
           _game.undo_move();
           _fenHistory.removeLast();
@@ -389,8 +401,10 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
 
     // Defender replies: the main-line move when the player followed it,
     // otherwise the most stubborn defence the solver can find.
+    final board = _game;
     Future.delayed(const Duration(milliseconds: 500), () {
-      if (!mounted || _puzzleCompleted) return;
+      if (!mounted || _puzzleCompleted || !identical(board, _game)) return;
+      if (_mode != ChessGameMode.dailyPuzzle || _game.turn == _puzzleSide) return;
       chess_lib.Move? reply;
       final scripted = followedLine &&
               _puzzleStepIndex < _currentPuzzle.solutionMoves.length
@@ -423,6 +437,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
 
   void _makeAIMove() {
     if (!mounted || _game.in_checkmate || _game.in_stalemate) return;
+    if (_mode != ChessGameMode.vsAI || _game.turn != chess_lib.Color.BLACK) return;
     final bestMove = ChessAI.getBestMove(_game, _aiDifficulty);
     if (bestMove != null) {
       final from = chess_lib.Chess.algebraic(bestMove.from);
@@ -546,8 +561,11 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
       return;
     }
     setState(() {
+      // If the AI already replied (White to move), take back both moves;
+      // if it has not replied yet, only the player's move exists to undo.
+      final aiReplied = _game.turn == chess_lib.Color.WHITE;
       _fenHistory.removeLast();
-      if (_mode == ChessGameMode.vsAI && _fenHistory.length > 1) {
+      if (_mode == ChessGameMode.vsAI && aiReplied && _fenHistory.length > 1) {
         _fenHistory.removeLast(); // Undo AI move as well
       }
       _game = chess_lib.Chess.fromFEN(_fenHistory.last);
@@ -651,7 +669,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
                                 Expanded(
                                   child: Text(
                                     _currentPuzzle.description,
-                                    maxLines: 1,
+                                    maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
                                       fontSize: 12.5,

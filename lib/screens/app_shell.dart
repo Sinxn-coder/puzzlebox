@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:puzzlebox/core/theme/neo.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
-import 'about_screen.dart';
+import 'streak_screen.dart';
 import 'unified_stats_screen.dart';
 import 'loading_screen.dart';
 
@@ -40,8 +40,8 @@ class _AppShellState extends ConsumerState<AppShell> {
   final pages = const [
     HomeScreen(),
     UnifiedStatsScreen(embedded: true),
+    StreakScreen(embedded: true),
     SettingsScreen(),
-    AboutScreen(),
   ];
 
   @override
@@ -102,6 +102,17 @@ class _AppShellState extends ConsumerState<AppShell> {
             ),
             NavigationDestination(
               icon: Icon(
+                Icons.local_fire_department_outlined,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              selectedIcon: Icon(
+                Icons.local_fire_department_rounded,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              label: 'Streak',
+            ),
+            NavigationDestination(
+              icon: Icon(
                 Icons.tune_outlined,
                 color: isDark ? Colors.white : Colors.black,
               ),
@@ -110,17 +121,6 @@ class _AppShellState extends ConsumerState<AppShell> {
                 color: isDark ? Colors.white : Colors.black,
               ),
               label: 'Settings',
-            ),
-            NavigationDestination(
-              icon: Icon(
-                Icons.info_outline_rounded,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-              selectedIcon: Icon(
-                Icons.info_rounded,
-                color: isDark ? Colors.white : Colors.black,
-              ),
-              label: 'About',
             ),
           ],
         ),

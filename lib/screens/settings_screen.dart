@@ -6,6 +6,7 @@ import '../core/providers/settings_provider.dart';
 import '../core/services/app_feedback_service.dart';
 import '../core/theme/app_theme.dart';
 import '../core/widgets/app_scaffold.dart';
+import 'about_screen.dart';
 
 class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
@@ -232,6 +233,21 @@ class SettingsScreen extends ConsumerWidget {
                       if (v) AppFeedbackService.testHaptic();
                     },
                   ),
+                  Divider(color: Neo.ink, thickness: Neo.width(2)),
+                  SwitchListTile(
+                    contentPadding: EdgeInsets.zero,
+                    activeThumbColor:
+                        AppTheme.neoPalettes[state.palette.clamp(0, 4)],
+                    title: const Text(
+                      'Sound Effects',
+                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                    ),
+                    subtitle: const Text(
+                      'Soft clicks on taps (follows your phone\'s touch sounds)',
+                    ),
+                    value: state.soundEnabled,
+                    onChanged: notifier.setSoundEnabled,
+                  ),
 
                   const Divider(color: Colors.black, thickness: 2),
                   SwitchListTile(
@@ -319,6 +335,41 @@ class SettingsScreen extends ConsumerWidget {
           const _Label('NOTIFICATIONS & REMINDERS'),
           const SizedBox(height: 12),
           const _NotificationsSettingsSection(),
+          const SizedBox(height: 28),
+
+          const _Label('ABOUT'),
+          const SizedBox(height: 12),
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1E293B) : Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Neo.border(2.5),
+              boxShadow: Neo.shadow(3.5),
+            ),
+            child: Material(
+              type: MaterialType.transparency,
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                leading: const Icon(Icons.info_outline_rounded),
+                title: const Text(
+                  'About Puzzlebox',
+                  style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                ),
+                subtitle: const Text('Credits, privacy policy and feedback'),
+                trailing: const Icon(Icons.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const AppScaffold(
+                      title: 'About',
+                      showBackButton: true,
+                      showInfoAction: false,
+                      body: AboutScreen(),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
           const SizedBox(height: 28),
         ],
       ),

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -44,16 +45,22 @@ void main() {
     );
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 2200));
-    for (final label in ['Play', 'Progress', 'Settings', 'About']) {
+    for (final label in ['Play', 'Progress', 'Streak', 'Settings']) {
       expect(find.text(label), findsWidgets);
     }
     await tester.tap(find.text('Settings'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 400));
     expect(find.textContaining('Default Difficulty'), findsOneWidget);
-    await tester.tap(find.text('About'));
+    // About now lives at the bottom of Settings.
+    await tester.scrollUntilVisible(
+      find.text('About Puzzlebox'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('About Puzzlebox'));
     await tester.pump();
-    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 600));
     expect(find.textContaining('q04ti'), findsWidgets);
   });
 }

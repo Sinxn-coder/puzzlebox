@@ -491,26 +491,6 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                                 ),
                                 const SizedBox(width: 6),
                                 GestureDetector(
-                                  onTap: _undo,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                                    decoration: BoxDecoration(
-                                      color: isDark ? const Color(0xFF1E293B) : Colors.white,
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Neo.border(2.0),
-                                      boxShadow: Neo.shadow(2.5),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Icon(Icons.undo, size: 18, color: controlColor),
-                                        const SizedBox(width: 4),
-                                        Text('Undo', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: controlColor)),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 6),
-                                GestureDetector(
                                   onTap: _erase,
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

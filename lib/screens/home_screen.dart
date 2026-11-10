@@ -114,7 +114,10 @@ class _HomeState extends ConsumerState<HomeScreen> {
     return Scaffold(
       backgroundColor: colors.surface,
       body: SafeArea(
-        child: CustomScrollView(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 860),
+            child: CustomScrollView(
           slivers: [
             // Header bar
             SliverToBoxAdapter(
@@ -198,6 +201,19 @@ class _HomeState extends ConsumerState<HomeScreen> {
               ),
             ),
 
+            // "Next up": only when there is something important to say.
+            if (_nextUp(engagement, today, picks, playedToday, resumable)
+                case final nextUp?)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                  child: _NextUpCard(
+                    data: nextUp,
+                    onTap: () => _openGame(nextUp.game),
+                  ),
+                ),
+              ),
+
             // Today hero
             SliverToBoxAdapter(
               child: Padding(
@@ -223,7 +239,8 @@ class _HomeState extends ConsumerState<HomeScreen> {
               ),
               SliverToBoxAdapter(
                 child: SizedBox(
-                  height: 92,
+                  // Grow with the text size so the two text lines never clip.
+                  height: 70 + MediaQuery.textScalerOf(context).scale(26),
                   child: ListView.separated(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
@@ -373,6 +390,8 @@ class _HomeState extends ConsumerState<HomeScreen> {
             const SliverToBoxAdapter(child: SizedBox(height: 36)),
           ],
         ),
+          ),
+        ),
       ),
     );
   }
@@ -383,6 +402,116 @@ class _HomeState extends ConsumerState<HomeScreen> {
     if (hour < 12) return 'Good morning.\nReady to solve?';
     if (hour < 18) return 'Good afternoon.\nTime for a puzzle?';
     return 'Good evening.\nOne more puzzle?';
+  }
+}
+
+typedef _NextUp = ({GameInfo game, String title, String subtitle, IconData icon});
+
+/// Picks the single most useful prompt: protect a streak, or help a brand-new
+/// player start. Returns null otherwise so Home stays uncluttered.
+_NextUp? _nextUp(
+  EngagementSnapshot engagement,
+  String today,
+  List<GameInfo> picks,
+  Set<Object?> playedToday,
+  List<ResumeInfo> resumable,
+) {
+  GameInfo bestGame() {
+    if (resumable.isNotEmpty) return GameCatalog.byId(resumable.first.gameId)!;
+    return picks.firstWhere(
+      (g) => !playedToday.contains(g.id),
+      orElse: () => picks.first,
+    );
+  }
+
+  if (engagement.currentStreak > 0 && !engagement.playDays.contains(today)) {
+    final game = bestGame();
+    return (
+      game: game,
+      title: 'Keep your ${engagement.currentStreak}-day streak',
+      subtitle: 'Solve one puzzle today. Try ${game.name}.',
+      icon: Icons.local_fire_department_rounded,
+    );
+  }
+  if (engagement.totalCompleted == 0 && engagement.history.isEmpty) {
+    final game = GameCatalog.byId('daily_five')!;
+    return (
+      game: game,
+      title: 'New here? Start with ${game.name}',
+      subtitle: 'A quick word game to warm up.',
+      icon: Icons.waving_hand_rounded,
+    );
+  }
+  return null;
+}
+
+class _NextUpCard extends StatelessWidget {
+  final _NextUp data;
+  final VoidCallback onTap;
+  const _NextUpCard({required this.data, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final ink = isDark ? Colors.white : Colors.black;
+    return Semantics(
+      button: true,
+      label: '${data.title}. ${data.subtitle}',
+      excludeSemantics: true,
+      child: PressableScale(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(18),
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(14, 12, 10, 12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(18),
+                border: Neo.border(2.5),
+                boxShadow: Neo.shadow(3),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFB923C),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Neo.border(2),
+                    ),
+                    child: Icon(data.icon, color: Colors.black, size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          data.title,
+                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w900, color: ink),
+                        ),
+                        Text(
+                          data.subtitle,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.play_arrow_rounded, color: ink),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 
@@ -675,7 +804,7 @@ class _ContinueCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final details = [
-      info.isDaily ? 'Daily' : 'Unlimited',
+      if (game.id == 'chess') info.difficulty else if (info.isDaily) 'Daily' else 'Unlimited',
       if (game.id != 'chess') info.difficulty,
       if (info.elapsedSeconds > 0) formatClock(info.elapsedSeconds),
     ].join(' · ');

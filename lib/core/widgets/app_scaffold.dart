@@ -7,6 +7,7 @@ import '../providers/settings_provider.dart';
 import '../services/app_feedback_service.dart';
 import '../theme/app_theme.dart';
 import '../game_catalog.dart';
+import 'tutorial_sheet.dart';
 
 /// Common scaffold used by all game screens and the home screen.
 ///
@@ -60,34 +61,12 @@ class AppScaffold extends ConsumerWidget {
     final rulesKey = 'has_seen_rules_$mainTitle';
     final hasSeenRules = prefs.getBool(rulesKey) ?? false;
 
-    if (!hasSeenRules) {
+    // First open of a game (not stats or other pages): a short step-by-step
+    // tutorial. The full rules stay in the ⋮ menu.
+    if (!hasSeenRules && game != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         prefs.setBool(rulesKey, true);
-        final rules = rulesFor(title);
-        if (context.mounted) {
-          showDialog(
-            context: context,
-            builder: (_) => AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(20),
-                side: Neo.side(2.5),
-              ),
-              title: const Text('How to Play', style: TextStyle(fontWeight: FontWeight.w900)),
-              content: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 480),
-                child: SingleChildScrollView(
-                  child: Text(rules, style: const TextStyle(height: 1.45, fontWeight: FontWeight.w600)),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Got it', style: TextStyle(fontWeight: FontWeight.w900)),
-                ),
-              ],
-            ),
-          );
-        }
+        if (context.mounted) GameTutorialSheet.show(context, game.name, title);
       });
     }
 
@@ -107,7 +86,7 @@ class AppScaffold extends ConsumerWidget {
       builder: (_) => const SettingsSheet(),
     );
 
-    return Scaffold(
+    final scaffold = Scaffold(
       appBar: AppBar(
         scrolledUnderElevation: 0,
         backgroundColor: colors.surface,
@@ -195,7 +174,32 @@ class AppScaffold extends ConsumerWidget {
       ),
       bottomNavigationBar: bottomNavigationBar,
     );
+
+    // With the colourful "Mixed" palette each game wears its own colour.
+    // A single palette the player picked is always respected.
+    if (game == null || palette != 0) return scaffold;
+    return Theme(data: tintedTheme(Theme.of(context), game.color), child: scaffold);
   }
+}
+
+/// [base] with its accent swapped for [accent]; every game colour is a bright
+/// pastel, so black text on it stays readable.
+ThemeData tintedTheme(ThemeData base, Color accent) {
+  final scheme = base.colorScheme.copyWith(
+    primary: accent,
+    primaryContainer: accent,
+    secondary: accent,
+  );
+  return base.copyWith(
+    colorScheme: scheme,
+    chipTheme: base.chipTheme.copyWith(selectedColor: accent),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: (base.elevatedButtonTheme.style ?? const ButtonStyle()).copyWith(
+        backgroundColor: WidgetStatePropertyAll(accent),
+      ),
+    ),
+    navigationBarTheme: base.navigationBarTheme.copyWith(indicatorColor: accent),
+  );
 }
 
 /// Coloured icon tile for a game; flies between Home and the game screen.

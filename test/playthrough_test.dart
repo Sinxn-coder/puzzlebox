@@ -41,10 +41,11 @@ void main() {
     );
     await tester.pump();
     
-    // Dismiss the "How to Play" dialog that appears on first launch
-    final gotIt = find.text('Got it');
-    if (gotIt.evaluate().isNotEmpty) {
-      await tester.tap(gotIt);
+    // Dismiss the first-launch tutorial once it has slid in.
+    await tester.pump(const Duration(milliseconds: 500));
+    final skip = find.text('Skip');
+    if (skip.evaluate().isNotEmpty) {
+      await tester.tap(skip.first);
       await tester.pumpAndSettle();
     }
     

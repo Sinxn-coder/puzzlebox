@@ -14,7 +14,9 @@ import '../core/widgets/pressable_scale.dart';
 import '../core/widgets/streak_earned_dialog.dart';
 
 class StreakScreen extends ConsumerStatefulWidget {
-  const StreakScreen({super.key});
+  /// True when shown as a bottom-navigation tab (no back arrow).
+  final bool embedded;
+  const StreakScreen({super.key, this.embedded = false});
 
   static void show(BuildContext context) {
     Navigator.of(context).push(
@@ -277,6 +279,9 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               child: Row(
                 children: [
+                  if (widget.embedded)
+                    const SizedBox(width: 44, height: 44)
+                  else
                   PressableScale(
                     child: InkWell(
                       borderRadius: BorderRadius.circular(14),
@@ -447,7 +452,10 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                         horizontal: 26,
                                         vertical: 26,
                                       ),
-                                      child: Column(
+                                      child: FittedBox(
+                                        fit: BoxFit.scaleDown,
+                                        alignment: Alignment.centerLeft,
+                                        child: Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         mainAxisAlignment:
@@ -491,6 +499,7 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                           ),
                                         ],
                                       ),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -525,8 +534,10 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: [
-                                    Text(
+                                    Flexible(
+                                      child: Text(
                                       'THIS WEEK',
+                                      overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 13,
                                         fontWeight: FontWeight.w900,
@@ -536,6 +547,8 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                             : Colors.black54,
                                       ),
                                     ),
+                                    ),
+                                    const SizedBox(width: 8),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 10,
@@ -560,7 +573,11 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                   ],
                                 ),
                                 const SizedBox(height: 18),
-                                Row(
+                                FittedBox(
+                                  fit: BoxFit.scaleDown,
+                                  child: SizedBox(
+                                  width: 7 * 46,
+                                  child: Row(
                                   mainAxisAlignment:
                                       MainAxisAlignment.spaceBetween,
                                   children: List.generate(weekDays.length, (i) {
@@ -584,6 +601,8 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
                                       ),
                                     );
                                   }),
+                                ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -779,12 +798,15 @@ class _StreakCalendarView extends StatelessWidget {
           // Calendar Header with Month/Year & Prev/Next Controls
           Row(
             children: [
-              Column(
+              Expanded(
+                child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     '${_monthNames[month.month - 1]} ${month.year}'
                         .toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.w900,
@@ -795,6 +817,8 @@ class _StreakCalendarView extends StatelessWidget {
                   const SizedBox(height: 2),
                   Text(
                     '$playedInMonth active ${playedInMonth == 1 ? 'day' : 'days'} this month',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
@@ -803,7 +827,8 @@ class _StreakCalendarView extends StatelessWidget {
                   ),
                 ],
               ),
-              const Spacer(),
+              ),
+              const SizedBox(width: 8),
               _MonthNavButton(
                 icon: Icons.chevron_left_rounded,
                 onTap: onPrev,
@@ -823,8 +848,7 @@ class _StreakCalendarView extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: const ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((w) {
-              return SizedBox(
-                width: 36,
+              return Expanded(
                 child: Text(
                   w,
                   textAlign: TextAlign.center,
@@ -1187,14 +1211,18 @@ class _StatMiniCard extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: iconColor),
               const SizedBox(width: 6),
-              Text(
+              Flexible(
+                child: Text(
                 title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w900,
                   color: isDark ? Colors.white60 : Colors.black54,
                   letterSpacing: 0.5,
                 ),
+              ),
               ),
             ],
           ),

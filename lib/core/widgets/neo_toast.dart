@@ -121,7 +121,9 @@ class _NeoToastCardState extends State<_NeoToastCard>
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = MediaQuery.of(context).padding.top + 14;
+    // Sit just below the top bar so the toast never covers back, undo or
+    // hint buttons, nor the on-screen keyboards and number pads at the bottom.
+    final topPadding = MediaQuery.of(context).padding.top + kToolbarHeight + 10;
 
     return Positioned(
       top: topPadding,

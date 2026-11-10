@@ -25,8 +25,30 @@ abstract final class AppFeedbackService {
     return true;
   }
 
+  static bool _soundOn([dynamic refOrContext]) {
+    try {
+      if (refOrContext is WidgetRef) return refOrContext.read(settingsProvider).soundEnabled;
+      if (refOrContext is Ref) return refOrContext.read(settingsProvider).soundEnabled;
+      if (refOrContext is BuildContext) {
+        return ProviderScope.containerOf(refOrContext, listen: false)
+            .read(settingsProvider)
+            .soundEnabled;
+      }
+    } catch (_) {}
+    return false;
+  }
+
+  /// Optional system sounds; never throws if the platform has none.
+  static void _sound(SystemSoundType type, [dynamic refOrContext]) {
+    if (!_soundOn(refOrContext)) return;
+    try {
+      SystemSound.play(type);
+    } catch (_) {}
+  }
+
   /// Light key tap feedback
   static Future<void> tap([dynamic refOrContext]) async {
+    _sound(SystemSoundType.click, refOrContext);
     if (_isEnabled(refOrContext)) {
       _nativeVibrate('tap');
       await HapticFeedback.selectionClick();
@@ -45,6 +67,7 @@ abstract final class AppFeedbackService {
 
   /// Celebratory victory fanfare rhythm (for solved puzzles & game complete)
   static Future<void> victory([dynamic refOrContext]) async {
+    _sound(SystemSoundType.alert, refOrContext);
     if (_isEnabled(refOrContext)) {
       _nativeVibrate('victory');
       await HapticFeedback.heavyImpact();

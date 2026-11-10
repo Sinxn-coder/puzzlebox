@@ -38,6 +38,12 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    // The fresh-install "Next up" card sits above, so scroll down to it.
+    await tester.scrollUntilVisible(
+      find.textContaining('My Puzzles'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.textContaining('My Puzzles'), findsOneWidget);
     expect(find.byType(HomeScreen), findsOneWidget);
   });
@@ -85,7 +91,7 @@ void main() {
           expect(find.text('Submit Word'), findsOneWidget);
         }
         if (entry.key != 'chess') {
-          await tester.tap(find.text('Next').first, warnIfMissed: false);
+          await tester.tap(find.byTooltip('Next puzzle').first, warnIfMissed: false);
           await tester.pump();
         }
         await tester.runAsync(() async {

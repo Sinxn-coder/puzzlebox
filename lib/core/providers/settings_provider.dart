@@ -22,13 +22,40 @@ class SettingsNotifier extends Notifier<SettingsState> {
   static const _neoStyleKey = 'settings_neo_style';
   static const _textScaleKey = 'settings_text_scale';
   static const _colorblindKey = 'settings_colorblind';
+  static const _soundKey = 'settings_sounds';
 
   /// Text size choices offered in settings. 0 follows the system setting.
   static const textScaleOptions = <double>[0, 1.0, 1.15, 1.3];
 
+  /// Keys that only exist once someone has used the app. Their presence means
+  /// an existing player, who keeps the original defaults (Minimal Slate,
+  /// light theme, haptics off) so nothing changes under them after updating.
+  static bool _isExistingPlayer(SharedPreferences prefs) =>
+      prefs.getKeys().any(
+        (k) =>
+            k == 'engagement_v1' ||
+            k == 'installation_puzzle_seed' ||
+            k == 'settings_notification_prompt_handled' ||
+            k == 'has_seen_intro_v1' ||
+            k.startsWith('has_seen_rules_') ||
+            k.startsWith('progress_v1_') ||
+            k.startsWith('settings_') ||
+            k.endsWith('_stats'),
+      );
+
+  /// Fresh installs start colourful, follow the phone's light/dark setting
+  /// and have light haptics on. Saved once so they never flip later.
+  static void _applyNewInstallDefaults(SharedPreferences prefs) {
+    if (prefs.containsKey('settings_palette') || _isExistingPlayer(prefs)) return;
+    prefs.setInt('settings_palette', 0);
+    prefs.setInt(_themeKey, ThemeMode.system.index);
+    prefs.setBool(_hapticsKey, true);
+  }
+
   @override
   SettingsState build() {
     final prefs = ref.watch(sharedPreferencesProvider);
+    _applyNewInstallDefaults(prefs);
     final themeIndex = prefs.getInt(_themeKey) ?? ThemeMode.light.index;
     final haptics = prefs.getBool(_hapticsKey) ?? false;
     final hardMode = prefs.getBool(_hardModeKey) ?? false;
@@ -46,7 +73,13 @@ class SettingsNotifier extends Notifier<SettingsState> {
           ? prefs.getDouble(_textScaleKey)!
           : 0,
       colorblindMode: prefs.getBool(_colorblindKey) ?? false,
+      soundEnabled: prefs.getBool(_soundKey) ?? false,
     );
+  }
+
+  Future<void> setSoundEnabled(bool enabled) async {
+    await ref.read(sharedPreferencesProvider).setBool(_soundKey, enabled);
+    state = state.copyWith(soundEnabled: enabled);
   }
 
   Future<void> setNeoStyle(NeoStyle style) async {
@@ -111,6 +144,9 @@ class SettingsState {
   /// adds shape cues so colour is never the only signal.
   final bool colorblindMode;
 
+  /// Soft system click on taps and a chime on wins (off by default).
+  final bool soundEnabled;
+
   const SettingsState({
     this.palette = 7,
     required this.themeMode,
@@ -120,6 +156,7 @@ class SettingsState {
     this.neoStyle = NeoStyle.bold,
     this.textScale = 0,
     this.colorblindMode = false,
+    this.soundEnabled = false,
   });
 
   SettingsState copyWith({
@@ -131,6 +168,7 @@ class SettingsState {
     NeoStyle? neoStyle,
     double? textScale,
     bool? colorblindMode,
+    bool? soundEnabled,
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
@@ -141,6 +179,7 @@ class SettingsState {
       neoStyle: neoStyle ?? this.neoStyle,
       textScale: textScale ?? this.textScale,
       colorblindMode: colorblindMode ?? this.colorblindMode,
+      soundEnabled: soundEnabled ?? this.soundEnabled,
     );
   }
 }

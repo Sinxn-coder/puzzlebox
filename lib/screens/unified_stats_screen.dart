@@ -262,12 +262,47 @@ class UnifiedStatsScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 14),
 
-          ...games.map((g) {
+          // Played games first; untouched ones grouped and dimmed below.
+          ...() {
+            bool played(Map<String, Object> g) {
+              final id = g['type'] as String;
+              return statsService.loadStats(id).gamesPlayed > 0 ||
+                  practice.getSolvedCount(id) > 0 ||
+                  engagement.completedFor(id) > 0;
+            }
+
+            final typed = games.cast<Map<String, Object>>();
+            final tried = typed.where(played).toList();
+            final untried = typed.where((g) => !played(g)).toList();
+            return [
+              ...tried.map((g) => (g, true)),
+              if (untried.isNotEmpty && tried.isNotEmpty) (null, false),
+              ...untried.map((g) => (g, false)),
+            ];
+          }().map((entry) {
+            final (g0, isTried) = entry;
+            if (g0 == null) {
+              return Padding(
+                padding: const EdgeInsets.fromLTRB(2, 12, 0, 10),
+                child: Text(
+                  'NOT TRIED YET',
+                  style: TextStyle(
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              );
+            }
+            final g = g0;
             final st = statsService.loadStats(g['type'] as String);
             final gameColor = AppTheme.getAccentColor(g['color'] as Color, settings.palette);
             final winPct = st.winPercentage.round();
 
-            return Semantics(
+            return Opacity(
+              opacity: isTried ? 1 : .6,
+              child: Semantics(
               button: true,
               label: '${g['name']}, win rate $winPct percent. Open details',
               excludeSemantics: true,
@@ -351,13 +386,23 @@ class UnifiedStatsScreen extends ConsumerWidget {
               ),
             ),
             ),
+            ),
             );
           }),
         ],
       ),
     );
 
-    if (embedded) return SafeArea(child: content);
+    if (embedded) {
+      return SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 680),
+            child: content,
+          ),
+        ),
+      );
+    }
     return AppScaffold(
       title: 'Statistics',
       showBackButton: true,

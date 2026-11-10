@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../widgets/game_mode_toggle.dart';
 import '../widgets/neo_toast.dart';
-import '../widgets/neo_difficulty_bar.dart';
+import '../widgets/daily_done_banner.dart';
 import '../services/app_feedback_service.dart';
 import '../services/practice_service.dart';
 import '../services/puzzle_progression.dart';
@@ -34,6 +34,11 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   Timer? _advanceTimer;
   Timer? _saveTimer;
   final Stopwatch _sessionWatch = Stopwatch();
+
+  /// Pauses the puzzle timer and play-time counter while the app is in the
+  /// background, so a puzzle left open does not inflate solve times.
+  AppLifecycleListener? _lifecycle;
+  bool _appActive = true;
   SharedPreferences? _prefs;
   String? _sessionKey;
   String? _sessionId;
@@ -48,9 +53,23 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   Map<String, dynamic> captureProgress() => {};
   void restoreProgress(Map<String, dynamic> data) {}
   void startSession() {
-    _sessionWatch
-      ..reset()
-      ..start();
+    _lifecycle ??= AppLifecycleListener(
+      onStateChange: (state) {
+        final active = state == AppLifecycleState.resumed;
+        if (active == _appActive) return;
+        if (!active) _saveSession();
+        _appActive = active;
+        if (active) {
+          _sessionWatch
+            ..reset()
+            ..start();
+        } else {
+          _sessionWatch.stop();
+        }
+      },
+    );
+    _sessionWatch.reset();
+    if (_appActive) _sessionWatch.start();
     _saveTimer?.cancel();
     _prefs = ref.read(sharedPreferencesProvider);
     _sessionKey = 'session_v2_${gameType}_${mode.name}_$difficulty';
@@ -78,7 +97,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _saveTimer = Timer.periodic(
       const Duration(seconds: 1),
       (_) {
-        if (!_finishing && !_transitioning) puzzleElapsed.value++;
+        if (_appActive && !_finishing && !_transitioning) puzzleElapsed.value++;
         _saveSession();
       },
     );
@@ -97,7 +116,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         }
 
         _sessionWatch.reset();
-        _sessionWatch.start();
+        if (_appActive) _sessionWatch.start();
       }
     }
     if (_prefs == null || _sessionKey == null || _finishing) return;
@@ -225,6 +244,8 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       await ref.read(puzzleProgressionProvider).advance(_progressionKey);
       _advanceReserved = true;
       if (!mounted || generation != _generation) return;
+      final dailyWin = won && mode == GameMode.daily;
+      if (dailyWin) _markDailyDone();
       if (explanation != null) {
         await showDialog<void>(
           context: context,
@@ -234,18 +255,34 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Next puzzle'),
+                child: Text(dailyWin ? 'Done' : 'Next puzzle'),
               ),
             ],
           ),
         );
-        if (mounted && generation == _generation) await nextPuzzle();
+        if (!mounted || generation != _generation) return;
+        if (dailyWin) {
+          setState(() => _finishing = false);
+          return;
+        }
+        await nextPuzzle();
         return;
       }
       if (won) {
         AppFeedbackService.victory(ref);
       } else {
         AppFeedbackService.heartbeat(ref);
+      }
+      if (dailyWin) {
+        NeoToast.show(
+          context,
+          "Today's puzzle solved! A new one arrives tomorrow.",
+          icon: Icons.check_circle_rounded,
+          color: const Color(0xFF4ADE80),
+          duration: const Duration(milliseconds: 2400),
+        );
+        setState(() => _finishing = false);
+        return;
       }
       NeoToast.show(
         context,
@@ -304,46 +341,80 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     );
   }
 
+  void _switchMode(GameMode value) {
+    if (value == mode || _transitioning) return;
+    _saveSession();
+    _saveTimer?.cancel();
+    _advanceTimer?.cancel();
+    _generation++;
+    _advanceReserved = false;
+    setState(() {
+      _dayKey = DateService.todayKey();
+      _mode = value;
+      _finishing = false;
+      onPracticeModeChanged(value);
+    });
+  }
+
+  void _switchDifficulty(String value) {
+    if (value == difficulty || _transitioning || _finishing) return;
+    _saveSession();
+    _saveTimer?.cancel();
+    _advanceTimer?.cancel();
+    _generation++;
+    _advanceReserved = false;
+    ref.read(sharedPreferencesProvider).setString('difficulty_$gameType', value);
+    setState(() {
+      difficulty = value;
+      _finishing = false;
+      onPracticeModeChanged(mode);
+    });
+  }
+
+  /// Next button: asks first when the player has made progress.
+  Future<void> _onNextTapped() async {
+    if (_transitioning) return;
+    if (hasPuzzleProgress && !_finishing) {
+      final skip = await confirmSkipPuzzle(context);
+      if (!skip || !mounted) return;
+    }
+    await nextPuzzle();
+  }
+
+  static const _dailyDonePrefix = 'daily_done_v1_';
+
+  /// Whether today's daily puzzle at [level] is already solved.
+  bool isDailyDone([String? level]) {
+    final raw = ref.read(sharedPreferencesProvider).getString('$_dailyDonePrefix$gameType');
+    if (raw == null) return false;
+    final parts = raw.split('|');
+    return parts.first == DateService.todayKey() &&
+        parts.skip(1).contains(level ?? difficulty);
+  }
+
+  void _markDailyDone() {
+    final prefs = ref.read(sharedPreferencesProvider);
+    final today = DateService.todayKey();
+    final raw = prefs.getString('$_dailyDonePrefix$gameType');
+    final parts = raw?.split('|') ?? const <String>[];
+    final levels = parts.isNotEmpty && parts.first == today
+        ? {...parts.skip(1), difficulty}
+        : {difficulty};
+    prefs.setString('$_dailyDonePrefix$gameType', [today, ...levels].join('|'));
+  }
+
   Widget buildPracticeModeToggle() => Column(
     children: [
-      GameModeToggle(
+      GameControlBar(
         mode: mode,
         practiceSolvedCount: practiceSolvedCount,
-        onModeChanged: (value) {
-          if (value == mode || _transitioning || _finishing) return;
-          _saveSession();
-          _saveTimer?.cancel();
-          _advanceTimer?.cancel();
-          _generation++;
-          _advanceReserved = false;
-          setState(() {
-            _dayKey = DateService.todayKey();
-            _mode = value;
-            _finishing = false;
-            onPracticeModeChanged(value);
-          });
-        },
+        onModeChanged: _switchMode,
+        difficulty: difficulty,
+        onDifficultyChanged: _switchDifficulty,
+        onNext: _onNextTapped,
       ),
-      NeoDifficultyBar(
-        currentDifficulty: difficulty,
-        onDifficultyChanged: (value) {
-          if (value == difficulty || _transitioning || _finishing) return;
-          _saveSession();
-          _saveTimer?.cancel();
-          _advanceTimer?.cancel();
-          _generation++;
-          _advanceReserved = false;
-          ref
-              .read(sharedPreferencesProvider)
-              .setString('difficulty_$gameType', value);
-          setState(() {
-            difficulty = value;
-            _finishing = false;
-            onPracticeModeChanged(mode);
-          });
-        },
-        onNextPressed: nextPuzzle,
-      ),
+      if (mode == GameMode.daily && isDailyDone())
+        DailyDoneBanner(onPlayUnlimited: () => _switchMode(GameMode.practice)),
     ],
   );
   @override
@@ -352,6 +423,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _saveSession();
     _saveTimer?.cancel();
     _advanceTimer?.cancel();
+    _lifecycle?.dispose();
     puzzleElapsed.dispose();
     super.dispose();
   }

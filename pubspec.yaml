@@ -1,7 +1,7 @@
 name: puzzlebox
 description: "Puzzlebox — Daily word & logic puzzle games"
 publish_to: 'none'
-version: 2.4.2+16
+version: 2.4.3+17
 
 environment:
   sdk: ^3.10.8

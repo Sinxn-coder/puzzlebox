@@ -89,23 +89,37 @@ class GameStatsScreen extends ConsumerWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 10,
-                  crossAxisSpacing: 10,
-                  childAspectRatio: 2.1,
-                  children: [
-                    _Metric('Wins', '${wins.length}', Icons.emoji_events_rounded),
-                    _Metric('Best time', best == null ? '—' : formatClock(best), Icons.bolt_rounded),
-                    _Metric('Average', average == null ? '—' : formatClock(average), Icons.timer_rounded),
-                    _Metric(
-                      'Daily win rate',
-                      stats.gamesPlayed == 0 ? '—' : '${stats.winPercentage.round()}%',
-                      Icons.calendar_today_rounded,
-                    ),
-                  ],
+                // Rows (not a fixed-ratio grid) so tiles grow with large text.
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(child: _Metric('Wins', '${wins.length}', Icons.emoji_events_rounded)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _Metric('Best time', best == null ? '—' : formatClock(best), Icons.bolt_rounded),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+                IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: _Metric('Average', average == null ? '—' : formatClock(average), Icons.timer_rounded),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _Metric(
+                          'Daily win rate',
+                          stats.gamesPlayed == 0 ? '—' : '${stats.winPercentage.round()}%',
+                          Icons.calendar_today_rounded,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 const SizedBox(height: 24),
                 const _Heading('SOLVE TIME', 'Last 20 timed wins, oldest to newest'),
@@ -311,7 +325,7 @@ class _Metric extends StatelessWidget {
                 ),
                 Text(
                   label,
-                  maxLines: 1,
+                  maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     fontSize: 11,

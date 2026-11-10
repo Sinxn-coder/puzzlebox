@@ -40,34 +40,42 @@ class NeoDifficultyBar extends StatelessWidget {
       child: Row(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
+            child: Row(
                 children: difficulties.map((d) {
                   final isSelected = d.toLowerCase() == currentDifficulty.toLowerCase();
                   final diffColor = _getDifficultyColor(d);
 
-                  return Padding(
+                  return Expanded(
+                    child: Padding(
                     padding: const EdgeInsets.only(right: 8),
-                    child: PressableScale(
+                    child: Semantics(
+                      button: true,
+                      selected: isSelected,
+                      label: '$d difficulty',
+                      excludeSemantics: true,
+                      child: PressableScale(
                       onTap: () => onDifficultyChanged(d),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
                         decoration: BoxDecoration(
                           color: isSelected
                               ? diffColor
                               : (isDark ? const Color(0xFF1E293B) : Colors.white),
                           borderRadius: BorderRadius.circular(12),
                           border: Neo.border(2.0),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isSelected ? Colors.black : Colors.black45,
-                              offset: const Offset(2.0, 2.0),
-                              blurRadius: 0,
-                            ),
-                          ],
+                          boxShadow: Neo.isSoft
+                              ? (isSelected ? Neo.shadow(2) : null)
+                              : [
+                                  BoxShadow(
+                                    color: isSelected ? Colors.black : Colors.black45,
+                                    offset: const Offset(2.0, 2.0),
+                                    blurRadius: 0,
+                                  ),
+                                ],
                         ),
-                        child: Row(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Container(
@@ -92,14 +100,16 @@ class NeoDifficultyBar extends StatelessWidget {
                             ),
                           ],
                         ),
+                        ),
                       ),
+                    ),
+                    ),
                     ),
                   );
                 }).toList(),
-              ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 0),
           PressableScale(
             onTap: onNextPressed,
             child: Container(

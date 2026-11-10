@@ -88,6 +88,7 @@ class ChessBoardWidget extends StatelessWidget {
 
                   return Expanded(
                     child: GestureDetector(
+                      key: ValueKey('chess_square_$squareId'),
                       onTap: () => onSquareTap(squareId),
                       child: Stack(
                         children: [

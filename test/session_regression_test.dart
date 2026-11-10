@@ -65,11 +65,16 @@ void main() {
       expect(PuzzleProgression(prefs).index('regression:Medium'), 1);
       expect(state.puzzleSeed(), isNot(first));
       state.moves = 7;
-      await tester.tap(find.text('Hard'));
+      // Difficulty lives in a chip menu now: open it, then pick.
+      await tester.tap(find.text('Medium'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Hard').last);
       await tester.pumpAndSettle();
       expect(state.moves, 0);
       state.moves = 3;
-      await tester.tap(find.text('Medium'));
+      await tester.tap(find.text('Hard'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Medium').last);
       await tester.pumpAndSettle();
       expect(state.moves, 7);
       await tester.pumpWidget(const SizedBox());
