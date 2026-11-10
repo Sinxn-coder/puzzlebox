@@ -187,22 +187,30 @@ class DailyFiveNotifier extends FamilyNotifier<DailyFiveState, GameMode> {
         );
       }
     }
+    bool streakEarned = false;
+    int currentStreak = 0;
     if (won) {
       final difficulty =
           ref
               .read(sharedPreferencesProvider)
               .getString('difficulty_daily_five') ??
           ref.read(settingsProvider).defaultDifficulty;
-      await ref
+      final engagement = await ref
           .read(engagementServiceProvider)
           .recordCompletion(game: _gameType, difficulty: difficulty);
+      streakEarned = engagement.streakEarnedToday;
+      currentStreak = engagement.currentStreak;
       ref.read(engagementRevisionProvider.notifier).state++;
     }
 
     await _saveState();
     await Future.delayed(const Duration(milliseconds: 850));
     if (_disposed || revision != _revision) return;
-    state = state.copyWith(isAnimating: false);
+    state = state.copyWith(
+      isAnimating: false,
+      streakEarnedToday: streakEarned,
+      earnedStreak: currentStreak,
+    );
 
     _saveState();
   }

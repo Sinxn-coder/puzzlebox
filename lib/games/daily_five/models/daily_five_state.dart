@@ -46,6 +46,12 @@ class DailyFiveState {
   /// Transient shake trigger for invalid word submission.
   final int shakeCount;
 
+  /// Whether a streak was earned today upon winning.
+  final bool streakEarnedToday;
+
+  /// The current streak number when earned.
+  final int earnedStreak;
+
   const DailyFiveState({
     required this.board,
     required this.currentRow,
@@ -56,6 +62,8 @@ class DailyFiveState {
     required this.puzzleNumber,
     this.isAnimating = false,
     this.shakeCount = 0,
+    this.streakEarnedToday = false,
+    this.earnedStreak = 0,
   });
 
   /// Creates a blank starting state.
@@ -87,6 +95,8 @@ class DailyFiveState {
     int? puzzleNumber,
     bool? isAnimating,
     int? shakeCount,
+    bool? streakEarnedToday,
+    int? earnedStreak,
   }) {
     return DailyFiveState(
       board: board ?? this.board,
@@ -98,6 +108,8 @@ class DailyFiveState {
       puzzleNumber: puzzleNumber ?? this.puzzleNumber,
       isAnimating: isAnimating ?? this.isAnimating,
       shakeCount: shakeCount ?? this.shakeCount,
+      streakEarnedToday: streakEarnedToday ?? this.streakEarnedToday,
+      earnedStreak: earnedStreak ?? this.earnedStreak,
     );
   }
 

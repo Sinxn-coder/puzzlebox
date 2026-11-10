@@ -5,13 +5,16 @@ import 'about_screen.dart';
 import 'unified_stats_screen.dart';
 import 'loading_screen.dart';
 
-class AppShell extends StatefulWidget {
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'widgets/notification_permission_sheet.dart';
+
+class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
   @override
-  State<AppShell> createState() => _AppShellState();
+  ConsumerState<AppShell> createState() => _AppShellState();
 }
 
-class _AppShellState extends State<AppShell> {
+class _AppShellState extends ConsumerState<AppShell> {
   bool _isLoading = true;
   int index = 0;
   final pages = const [
@@ -30,6 +33,10 @@ class _AppShellState extends State<AppShell> {
         onFinished: () {
           if (mounted) {
             setState(() => _isLoading = false);
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (WidgetsBinding.instance is! WidgetsFlutterBinding) return;
+              NotificationPermissionSheet.showIfNeeded(context, ref);
+            });
           }
         },
       );
@@ -40,19 +47,13 @@ class _AppShellState extends State<AppShell> {
         duration: const Duration(milliseconds: 250),
         switchInCurve: Curves.easeInOut,
         switchOutCurve: Curves.easeInOut,
-        child: KeyedSubtree(
-          key: ValueKey<int>(index),
-          child: pages[index],
-        ),
+        child: KeyedSubtree(key: ValueKey<int>(index), child: pages[index]),
       ),
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF1E293B) : Colors.white,
           border: const Border(
-            top: BorderSide(
-              color: Colors.black,
-              width: 2.5,
-            ),
+            top: BorderSide(color: Colors.black, width: 2.5),
           ),
         ),
         child: NavigationBar(
@@ -60,23 +61,47 @@ class _AppShellState extends State<AppShell> {
           onDestinationSelected: (value) => setState(() => index = value),
           destinations: [
             NavigationDestination(
-              icon: Icon(Icons.grid_view_outlined, color: isDark ? Colors.white : Colors.black),
-              selectedIcon: Icon(Icons.grid_view_rounded, color: isDark ? Colors.white : Colors.black),
+              icon: Icon(
+                Icons.grid_view_outlined,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              selectedIcon: Icon(
+                Icons.grid_view_rounded,
+                color: isDark ? Colors.white : Colors.black,
+              ),
               label: 'Play',
             ),
             NavigationDestination(
-              icon: Icon(Icons.bar_chart_outlined, color: isDark ? Colors.white : Colors.black),
-              selectedIcon: Icon(Icons.bar_chart_rounded, color: isDark ? Colors.white : Colors.black),
+              icon: Icon(
+                Icons.bar_chart_outlined,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              selectedIcon: Icon(
+                Icons.bar_chart_rounded,
+                color: isDark ? Colors.white : Colors.black,
+              ),
               label: 'Progress',
             ),
             NavigationDestination(
-              icon: Icon(Icons.tune_outlined, color: isDark ? Colors.white : Colors.black),
-              selectedIcon: Icon(Icons.tune_rounded, color: isDark ? Colors.white : Colors.black),
+              icon: Icon(
+                Icons.tune_outlined,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              selectedIcon: Icon(
+                Icons.tune_rounded,
+                color: isDark ? Colors.white : Colors.black,
+              ),
               label: 'Settings',
             ),
             NavigationDestination(
-              icon: Icon(Icons.info_outline_rounded, color: isDark ? Colors.white : Colors.black),
-              selectedIcon: Icon(Icons.info_rounded, color: isDark ? Colors.white : Colors.black),
+              icon: Icon(
+                Icons.info_outline_rounded,
+                color: isDark ? Colors.white : Colors.black,
+              ),
+              selectedIcon: Icon(
+                Icons.info_rounded,
+                color: isDark ? Colors.white : Colors.black,
+              ),
               label: 'About',
             ),
           ],

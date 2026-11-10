@@ -15,6 +15,7 @@ class EngagementSnapshot {
   final List<String> playDays;
   final List<Map<String, dynamic>> history;
   final int storedPlaytimeSeconds;
+  final bool streakEarnedToday;
 
   const EngagementSnapshot(
     this.currentStreak,
@@ -23,6 +24,7 @@ class EngagementSnapshot {
     this.playDays,
     this.history, {
     this.storedPlaytimeSeconds = 0,
+    this.streakEarnedToday = false,
   });
 
   int get totalSeconds {
@@ -52,7 +54,7 @@ class EngagementService {
   EngagementService(this.prefs);
   static const _key = 'engagement_v1';
 
-  EngagementSnapshot load({DateTime? now}) {
+  EngagementSnapshot load({DateTime? now, bool streakEarnedToday = false}) {
     final todayStr = _day(now ?? DateTime.now());
     try {
       final data =
@@ -90,6 +92,7 @@ class EngagementService {
           ),
         ),
         storedPlaytimeSeconds: data['playtime_seconds'] as int? ?? 0,
+        streakEarnedToday: streakEarnedToday,
       );
     } catch (_) {
       return const EngagementSnapshot(0, 0, 0, [], []);
@@ -115,6 +118,7 @@ class EngagementService {
   }) async {
     final current = load(now: now);
     final today = _day(now ?? DateTime.now());
+    final isNewDay = !current.playDays.contains(today);
     final days = {...current.playDays, today}.toList()..sort();
     final history = [
       ...current.history,
@@ -141,7 +145,8 @@ class EngagementService {
         'playtime_seconds': newPlaytime,
       }),
     );
-    return load(now: now);
+    final streakEarned = isNewDay && currentStreak > 0;
+    return load(now: now, streakEarnedToday: streakEarned);
   }
 
   static String _day(DateTime value) =>

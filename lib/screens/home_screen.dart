@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/providers/settings_provider.dart';
 import '../core/theme/app_theme.dart';
@@ -22,6 +23,7 @@ import '../games/binary/binary_screen.dart';
 import '../games/cages/cages_screen.dart';
 import '../core/widgets/pressable_scale.dart';
 import '../core/services/engagement_service.dart';
+import 'streak_screen.dart';
 
 typedef _GameEntry = (
   String id,
@@ -32,7 +34,6 @@ typedef _GameEntry = (
   Color tabColor,
   Widget screen,
 );
-
 
 const _categoryIcons = {
   'All': Icons.apps_rounded,
@@ -207,15 +208,16 @@ class _HomeState extends ConsumerState<HomeScreen> {
     );
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
     final isDark = theme.brightness == Brightness.dark;
     final settings = ref.watch(settingsProvider);
-    final primaryAccent = AppTheme.getAccentColor(const Color(0xFFFACC15), settings.palette);
+    final primaryAccent = AppTheme.getAccentColor(
+      const Color(0xFFFACC15),
+      settings.palette,
+    );
 
     final solved = _games.fold<int>(
       0,
@@ -249,33 +251,48 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       backgroundColor: primaryAccent,
                     ),
                     const Spacer(),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: primaryAccent,
+                    PressableScale(
+                      child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.black, width: 2.5),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.local_fire_department_rounded,
-                            size: 18,
-                            color: engagement.currentStreak > 0 ? const Color(0xFFF97316) : Colors.black87,
+                        onTap: () => StreakScreen.show(context),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 8,
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${engagement.currentStreak}d Streak',
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black,
-                            ),
+                          decoration: BoxDecoration(
+                            color: primaryAccent,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.black, width: 2.5),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Colors.black,
+                                offset: Offset(3, 3),
+                                blurRadius: 0,
+                              ),
+                            ],
                           ),
-                        ],
+                          child: Row(
+                            children: [
+                              Icon(
+                                Icons.local_fire_department_rounded,
+                                size: 18,
+                                color: engagement.currentStreak > 0
+                                    ? const Color(0xFFF97316)
+                                    : Colors.black87,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                '${engagement.currentStreak}d Streak',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -325,31 +342,50 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       child: Container(
                         height: 52,
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                          color: isDark
+                              ? const Color(0xFF1E293B)
+                              : Colors.white,
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: Colors.black, width: 2.5),
                           boxShadow: const [
-                            BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
+                            BoxShadow(
+                              color: Colors.black,
+                              offset: Offset(3, 3),
+                              blurRadius: 0,
+                            ),
                           ],
                         ),
                         child: TextField(
                           controller: _searchController,
                           onChanged: (v) => setState(() => _query = v),
                           textAlignVertical: TextAlignVertical.center,
-                          style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14.5),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5,
+                          ),
                           decoration: InputDecoration(
                             border: InputBorder.none,
-                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                            contentPadding: const EdgeInsets.symmetric(
+                              vertical: 14,
+                            ),
                             hintText: 'Search puzzles...',
                             hintStyle: TextStyle(
                               color: colors.onSurfaceVariant,
                               fontWeight: FontWeight.w700,
                               fontSize: 14,
                             ),
-                            prefixIcon: const Icon(Icons.search_rounded, color: Colors.black, size: 22),
+                            prefixIcon: const Icon(
+                              Icons.search_rounded,
+                              color: Colors.black,
+                              size: 22,
+                            ),
                             suffixIcon: _query.isNotEmpty
                                 ? IconButton(
-                                    icon: const Icon(Icons.close_rounded, color: Colors.black, size: 18),
+                                    icon: const Icon(
+                                      Icons.close_rounded,
+                                      color: Colors.black,
+                                      size: 18,
+                                    ),
                                     onPressed: () {
                                       _searchController.clear();
                                       setState(() => _query = '');
@@ -369,17 +405,33 @@ class _HomeState extends ConsumerState<HomeScreen> {
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(color: Colors.black, width: 2.5),
                         boxShadow: const [
-                          BoxShadow(color: Colors.black, offset: Offset(3, 3), blurRadius: 0),
+                          BoxShadow(
+                            color: Colors.black,
+                            offset: Offset(3, 3),
+                            blurRadius: 0,
+                          ),
                         ],
                       ),
                       child: PopupMenuButton<String>(
-                        icon: const Icon(Icons.grid_view_rounded, color: Colors.black, size: 24),
+                        icon: const Icon(
+                          Icons.grid_view_rounded,
+                          color: Colors.black,
+                          size: 24,
+                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                           side: const BorderSide(color: Colors.black, width: 2),
                         ),
                         color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                        onOpened: () {
+                          if (ref.read(settingsProvider).hapticsEnabled) {
+                            HapticFeedback.mediumImpact();
+                          }
+                        },
                         onSelected: (String cat) {
+                          if (ref.read(settingsProvider).hapticsEnabled) {
+                            HapticFeedback.selectionClick();
+                          }
                           setState(() {
                             _filter = cat;
                           });
@@ -393,25 +445,38 @@ class _HomeState extends ConsumerState<HomeScreen> {
                             return PopupMenuItem<String>(
                               value: cat,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                                decoration: isSelected ? BoxDecoration(
-                                  color: primaryAccent,
-                                  borderRadius: BorderRadius.circular(12),
-                                ) : null,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 8,
+                                ),
+                                decoration: isSelected
+                                    ? BoxDecoration(
+                                        color: primaryAccent,
+                                        borderRadius: BorderRadius.circular(12),
+                                      )
+                                    : null,
                                 child: Row(
                                   children: [
                                     Icon(
-                                      _categoryIcons[cat], 
-                                      size: 20, 
-                                      color: isSelected ? Colors.black : primaryAccent,
+                                      _categoryIcons[cat],
+                                      size: 20,
+                                      color: isSelected
+                                          ? Colors.black
+                                          : primaryAccent,
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
                                       child: Text(
-                                        '$cat ($count)', 
+                                        '$cat ($count)',
                                         style: TextStyle(
-                                          fontWeight: isSelected ? FontWeight.w900 : FontWeight.w700,
-                                          color: isSelected ? Colors.black : (isDark ? Colors.white : Colors.black),
+                                          fontWeight: isSelected
+                                              ? FontWeight.w900
+                                              : FontWeight.w700,
+                                          color: isSelected
+                                              ? Colors.black
+                                              : (isDark
+                                                    ? Colors.white
+                                                    : Colors.black),
                                         ),
                                       ),
                                     ),
@@ -438,7 +503,10 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       child: _NeoStatCard(
                         value: '$solved',
                         label: 'Solved',
-                        color: AppTheme.getAccentColor(const Color(0xFF4ADE80), settings.palette),
+                        color: AppTheme.getAccentColor(
+                          const Color(0xFF4ADE80),
+                          settings.palette,
+                        ),
                         icon: Icons.check_circle_rounded,
                       ),
                     ),
@@ -447,7 +515,10 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       child: _NeoStatCard(
                         value: '${engagement.currentStreak}',
                         label: 'Streak',
-                        color: AppTheme.getAccentColor(const Color(0xFFFACC15), settings.palette),
+                        color: AppTheme.getAccentColor(
+                          const Color(0xFFFACC15),
+                          settings.palette,
+                        ),
                         icon: Icons.local_fire_department_rounded,
                       ),
                     ),
@@ -456,7 +527,10 @@ class _HomeState extends ConsumerState<HomeScreen> {
                       child: _NeoStatCard(
                         value: '${_games.length}',
                         label: 'Games',
-                        color: AppTheme.getAccentColor(const Color(0xFF38BDF8), settings.palette),
+                        color: AppTheme.getAccentColor(
+                          const Color(0xFF38BDF8),
+                          settings.palette,
+                        ),
                         icon: Icons.apps_rounded,
                       ),
                     ),
@@ -511,7 +585,11 @@ class _HomeState extends ConsumerState<HomeScreen> {
                   padding: const EdgeInsets.symmetric(vertical: 40),
                   child: Column(
                     children: [
-                      Icon(Icons.search_off_rounded, size: 44, color: isDark ? Colors.white : Colors.black),
+                      Icon(
+                        Icons.search_off_rounded,
+                        size: 44,
+                        color: isDark ? Colors.white : Colors.black,
+                      ),
                       const SizedBox(height: 12),
                       Text(
                         _query.isEmpty
@@ -613,7 +691,11 @@ class _NeoStatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: Colors.black, width: 2.5),
         boxShadow: const [
-          BoxShadow(color: Colors.black, offset: Offset(3.5, 3.5), blurRadius: 0),
+          BoxShadow(
+            color: Colors.black,
+            offset: Offset(3.5, 3.5),
+            blurRadius: 0,
+          ),
         ],
       ),
       child: Column(
@@ -695,7 +777,11 @@ class _FolderCard extends ConsumerWidget {
                   ),
                   border: Border.all(color: Colors.black, width: 2.5),
                   boxShadow: const [
-                    BoxShadow(color: Colors.black, offset: Offset(4, 4), blurRadius: 0),
+                    BoxShadow(
+                      color: Colors.black,
+                      offset: Offset(4, 4),
+                      blurRadius: 0,
+                    ),
                   ],
                 ),
                 child: Column(
@@ -717,11 +803,17 @@ class _FolderCard extends ConsumerWidget {
                         const Spacer(),
                         if (isNew)
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 6,
+                              vertical: 2,
+                            ),
                             decoration: BoxDecoration(
                               color: const Color(0xFFF43F5E),
                               borderRadius: BorderRadius.circular(6),
-                              border: Border.all(color: Colors.black, width: 1.5),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 1.5,
+                              ),
                             ),
                             child: const Text(
                               'NEW',
@@ -738,9 +830,16 @@ class _FolderCard extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: const Color(0xFF4ADE80),
                               shape: BoxShape.circle,
-                              border: Border.all(color: Colors.black, width: 1.5),
+                              border: Border.all(
+                                color: Colors.black,
+                                width: 1.5,
+                              ),
                             ),
-                            child: const Icon(Icons.check_rounded, size: 12, color: Colors.black),
+                            child: const Icon(
+                              Icons.check_rounded,
+                              size: 12,
+                              color: Colors.black,
+                            ),
                           ),
                       ],
                     ),
@@ -766,7 +865,9 @@ class _FolderCard extends ConsumerWidget {
                           style: TextStyle(
                             fontSize: 10.5,
                             fontWeight: FontWeight.w700,
-                            color: isDark ? const Color(0xFF94A3B8) : const Color(0xFF525252),
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF525252),
                           ),
                         ),
                       ],
@@ -780,7 +881,10 @@ class _FolderCard extends ConsumerWidget {
                 top: 0,
                 left: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 3,
+                  ),
                   decoration: BoxDecoration(
                     color: accentColor,
                     borderRadius: const BorderRadius.only(

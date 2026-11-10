@@ -1,7 +1,7 @@
 name: puzzlebox
 description: "Puzzlebox — Daily word & logic puzzle games"
 publish_to: 'none'
-version: 2.4.0+14
+version: 2.4.2+16
 
 environment:
   sdk: ^3.10.8
@@ -29,6 +29,10 @@ dependencies:
   flutter_svg: ^2.0.10
   path_provider: ^2.1.6
   pdf: ^3.13.1
+  flutter_local_notifications: ^22.3.2
+  timezone: ^0.11.2
+  flutter_timezone: ^5.1.1
+  lottie: ^3.8.2
 
 dev_dependencies:
   flutter_test:
@@ -45,6 +49,13 @@ flutter:
 
   assets:
     - assets/puzzlebox-logo.svg
+    - assets/streak_yellow.json
+    - assets/streak_green.json
+    - assets/streak_pink.json
+    - assets/streak_cyan.json
+    - assets/streak_violet.json
+    - assets/streak_orange.json
+    - assets/streak_slate.json
     - assets/words/daily_five_answers.txt
     - assets/words/daily_five_valid.txt
     - assets/words/english.txt

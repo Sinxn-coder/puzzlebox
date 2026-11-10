@@ -17,6 +17,7 @@ import '../../../core/widgets/neo_toast.dart';
 import '../../../core/widgets/fixed_slot_widgets.dart';
 import '../../../core/widgets/neo_difficulty_bar.dart';
 import '../../../core/services/app_feedback_service.dart';
+import '../../../core/widgets/streak_earned_dialog.dart';
 
 /// Main screen for the Daily Five word-guessing game.
 class DailyFiveScreen extends ConsumerStatefulWidget {
@@ -64,6 +65,9 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
         if (!mounted) return;
         if (game.phase == GamePhase.won) {
           AppFeedbackService.victory(ref);
+          if (game.streakEarnedToday) {
+            StreakEarnedDialog.show(context, streak: game.earnedStreak);
+          }
         } else {
           AppFeedbackService.error(ref);
         }

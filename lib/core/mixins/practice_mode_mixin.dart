@@ -14,6 +14,7 @@ import '../providers/settings_provider.dart';
 import '../services/engagement_service.dart';
 import '../services/stats_service.dart';
 import '../widgets/celebration_burst.dart';
+import '../widgets/streak_earned_dialog.dart';
 
 mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   String get gameType;
@@ -142,7 +143,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         setState(() => _practiceSolvedCount = count);
       }
       if (won) {
-        await ref
+        final engagement = await ref
             .read(engagementServiceProvider)
             .recordCompletion(
               game: gameType,
@@ -160,6 +161,9 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         if (!mounted || generation != _generation) return;
         ref.read(engagementRevisionProvider.notifier).state++;
         showCelebrationBurst(context);
+        if (engagement.streakEarnedToday) {
+          StreakEarnedDialog.show(context, streak: engagement.currentStreak);
+        }
       }
       if (!mounted || generation != _generation) return;
       await ref.read(puzzleProgressionProvider).advance(_progressionKey);
