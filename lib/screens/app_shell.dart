@@ -1,4 +1,7 @@
+import '../core/services/achievements.dart';
 import 'package:flutter/material.dart';
+import '../core/widgets/neo_toast.dart';
+import '../core/services/engagement_service.dart';
 import 'package:puzzlebox/core/theme/neo.dart';
 import 'home_screen.dart';
 import 'settings_screen.dart';
@@ -30,9 +33,31 @@ class _AppShellState extends ConsumerState<AppShell> {
     if (!_isLoading) _afterIntro();
   }
 
+  /// Missed a day? A saved streak freeze quietly keeps the streak alive.
+  Future<void> _useStreakFreezes() async {
+    Achievements.newlyUnlocked(
+      ref.read(sharedPreferencesProvider),
+      ref.read(engagementServiceProvider).load(),
+    );
+    final used = await ref.read(engagementServiceProvider).applyFreezes();
+    if (used == 0 || !mounted) return;
+    ref.read(engagementRevisionProvider.notifier).state++;
+    final streak = ref.read(engagementServiceProvider).load().currentStreak;
+    NeoToast.show(
+      context,
+      used == 1
+          ? '❄️ A streak freeze saved your $streak-day streak!'
+          : '❄️ $used streak freezes saved your $streak-day streak!',
+      icon: Icons.ac_unit_rounded,
+      color: const Color(0xFF38BDF8),
+      duration: const Duration(seconds: 4),
+    );
+  }
+
   void _afterIntro() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      _useStreakFreezes();
       if (WidgetsBinding.instance is! WidgetsFlutterBinding) return;
       NotificationPermissionSheet.showIfNeeded(context, ref);
     });

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'cages_generator.dart';
 import '../../core/theme/app_colors.dart';
@@ -208,7 +209,11 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       onUndo: _undo,
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: _hint,
       body: _puzzle == null
           ? Column(
@@ -366,7 +371,7 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
                                       Center(
                                         child: _user[index] == 0
                                             ? null
-                                            : Text(
+                                            : PopOnChange(value: _user[index], child: Text(
                                                 '${_user[index]}',
                                                 style: TextStyle(
                                                   fontSize: 20,
@@ -375,7 +380,7 @@ class _CagesScreenState extends ConsumerState<CagesScreen>
                                                       ? AppColors.error
                                                       : colors.onSurface,
                                                 ),
-                                              ),
+                                              )),
                                       ),
                                     ],
                                   ),

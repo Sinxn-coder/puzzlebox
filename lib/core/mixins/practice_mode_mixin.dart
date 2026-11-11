@@ -1,3 +1,8 @@
+import '../widgets/app_scaffold.dart';
+import '../services/share_card.dart';
+import '../game_catalog.dart';
+import '../../screens/achievements_screen.dart';
+import 'dart:math';
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
@@ -11,6 +16,9 @@ import '../services/practice_service.dart';
 import '../services/puzzle_progression.dart';
 import '../services/date_service.dart';
 import '../services/session_resume.dart';
+import '../services/hint_budget.dart';
+import '../services/special_puzzles.dart';
+import '../theme/neo.dart';
 import '../providers/settings_provider.dart';
 import '../services/engagement_service.dart';
 import '../services/stats_service.dart';
@@ -21,6 +29,11 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   String get gameType;
   GameMode _mode = GameMode.practice;
   String _dayKey = DateService.todayKey();
+
+  /// Set when playing an archive day or the weekly challenge.
+  PuzzleLaunch? _special;
+  bool get isArchive => _special != null && !_special!.isWeekly;
+  bool get isWeekly => _special?.isWeekly ?? false;
   String get dailyDateKey => _dayKey;
   GameMode get mode => _mode;
   int _practiceSolvedCount = 0;
@@ -50,6 +63,42 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   /// True once the player has changed the current puzzle.
   bool get hasPuzzleProgress => _touched;
+
+  /// Paced hints for the current puzzle (see [HintBudget]).
+  final HintBudget hintBudget = HintBudget();
+
+  /// Bumped on a wrong move (board shakes) and on a win (board lights up).
+  final ValueNotifier<int> wrongPulse = ValueNotifier<int>(0);
+  final ValueNotifier<int> winPulse = ValueNotifier<int>(0);
+
+  /// Call when the player makes a wrong move: shake + error buzz.
+  void signalWrong() {
+    wrongPulse.value++;
+    AppFeedbackService.error(ref);
+  }
+
+  /// Gate for the top-bar hint button. Returns false (and says when the next
+  /// hint is ready) while the cooldown is running.
+  bool useHint() {
+    if (_finishing) return false;
+    if (hintBudget.tryUse()) {
+      if (hintBudget.used == HintBudget.freeHints) {
+        Future.microtask(() {
+          if (mounted) {
+            showPuzzleHint('That was your last free hint. More unlock every ${HintBudget.cooldown.inSeconds}s.');
+          }
+        });
+      }
+      return true;
+    }
+    NeoToast.show(
+      context,
+      'Next hint in ${HintBudget.format(hintBudget.waitLeft!)}. Give it a try first!',
+      icon: Icons.hourglass_top_rounded,
+      color: const Color(0xFFFACC15),
+    );
+    return false;
+  }
   Map<String, dynamic> captureProgress() => {};
   void restoreProgress(Map<String, dynamic> data) {}
   void startSession() {
@@ -72,12 +121,14 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (_appActive) _sessionWatch.start();
     _saveTimer?.cancel();
     _prefs = ref.read(sharedPreferencesProvider);
-    _sessionKey = 'session_v2_${gameType}_${mode.name}_$difficulty';
+    _sessionKey = 'session_v2_${gameType}_${mode.name}_$difficulty'
+        '${_special != null ? '_$_dayKey' : ''}';
     _sessionId = puzzleRequest.id;
     _sessionMode = mode.name;
     _baseline = null;
     _touched = false;
     puzzleElapsed.value = 0;
+    hintBudget.reset();
     try {
       final raw =
           _prefs!.getString(_sessionKey!) ??
@@ -87,6 +138,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         if (data['id'] == puzzleRequest.id && data['mode'] == mode.name) {
           restoreProgress(Map<String, dynamic>.from(data['progress']));
           puzzleElapsed.value = data['elapsed'] as int? ?? 0;
+          hintBudget.reset(used: data['hints'] as int? ?? 0);
           _touched = data['touched'] as bool? ?? true;
         }
       }
@@ -134,9 +186,10 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         'progress': data,
         'elapsed': puzzleElapsed.value,
         'touched': _touched,
+        'hints': hintBudget.used,
       }),
     );
-    if (_touched) {
+    if (_touched && _special == null) {
       SessionResume.write(
         _prefs!,
         gameId: gameType,
@@ -155,6 +208,48 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
   }
 
   String get _progressionKey => '$gameType:$difficulty';
+
+  /// Picks an item from a content pool of [poolSize] without repeats: in
+  /// Unlimited each player walks their own shuffled deck, and nothing comes
+  /// back until the whole pool has been played. Daily walks a shared order
+  /// by date, so consecutive days never repeat either.
+  int uniqueIndex(int poolSize) {
+    if (poolSize <= 1) return 0;
+    final progression = ref.read(puzzleProgressionProvider);
+    final daily = mode == GameMode.daily;
+    final n = daily
+        ? SpecialPuzzles.puzzleNumberFor(_dayKey)
+        : progression.index(_progressionKey);
+    final deckSeed = daily
+        ? stableSeed('$gameType:daily-deck:$difficulty')
+        : progression.seed('${gameType}_deck', progressionKey: '${gameType}_deck');
+    final cycle = n ~/ poolSize;
+    final order = List<int>.generate(poolSize, (i) => i)
+      ..shuffle(Random(deckSeed ^ (cycle * 0x9E3779B1)));
+    return order[n % poolSize];
+  }
+
+  /// Deck order for picking several items per puzzle (e.g. Connections
+  /// groups): puzzle n starts at slot n * [perPuzzle] of the player's deck,
+  /// so items are not reused until the deck has been worked through.
+  List<int> uniqueDeck(int poolSize, int perPuzzle) {
+    final progression = ref.read(puzzleProgressionProvider);
+    final daily = mode == GameMode.daily;
+    final n = daily
+        ? SpecialPuzzles.puzzleNumberFor(_dayKey)
+        : progression.index(_progressionKey);
+    final deckSeed = daily
+        ? stableSeed('$gameType:daily-deck:$difficulty')
+        : progression.seed('${gameType}_deck', progressionKey: '${gameType}_deck');
+    List<int> cycleOrder(int cycle) => List<int>.generate(poolSize, (i) => i)
+      ..shuffle(Random(deckSeed ^ (cycle * 0x9E3779B1)));
+    final start = n * perPuzzle;
+    final first = cycleOrder(start ~/ poolSize);
+    final next = cycleOrder(start ~/ poolSize + 1);
+    final offset = start % poolSize;
+    // Current cycle from the offset, then the following cycle as overflow.
+    return [...first.sublist(offset), ...next];
+  }
 
   int puzzleSeed() => mode == GameMode.daily
       ? stableSeed('$gameType:$_dayKey:$difficulty')
@@ -183,7 +278,19 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     if (!['Easy', 'Medium', 'Hard'].contains(difficulty)) difficulty = 'Medium';
     final prefs = ref.read(sharedPreferencesProvider);
     // Reopen whichever puzzle the player left unfinished.
-    final resume = SessionResume.read(prefs, gameType);
+    final launch = PuzzleLaunch.take(gameType);
+    final resume = launch == null ? SessionResume.read(prefs, gameType) : null;
+    if (launch != null) {
+      _mode = GameMode.daily;
+      if (launch.isWeekly) {
+        _special = launch;
+        difficulty = 'Hard';
+        _dayKey = SpecialPuzzles.weekKey();
+      } else if (launch.day != DateService.todayKey()) {
+        _special = launch;
+        _dayKey = launch.day!;
+      }
+    }
     if (resume != null) {
       _mode = resume.isDaily ? GameMode.daily : GameMode.practice;
       if (['Easy', 'Medium', 'Hard'].contains(resume.difficulty)) {
@@ -224,6 +331,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
               game: gameType,
               difficulty: difficulty,
               seconds: solveSeconds,
+              hints: hintBudget.used,
             );
         await ref
             .read(statsServiceProvider)
@@ -231,11 +339,14 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
               gameType: gameType,
               todayKey: DateService.todayKey(),
               won: true,
-              isPractice: mode == GameMode.practice,
+              // Archive and weekly wins do not count as today's daily.
+              isPractice: mode == GameMode.practice || _special != null,
             );
         if (!mounted || generation != _generation) return;
         ref.read(engagementRevisionProvider.notifier).state++;
+        winPulse.value++;
         showCelebrationBurst(context);
+        announceAchievements(context, ref);
         if (engagement.streakEarnedToday) {
           StreakEarnedDialog.show(context, streak: engagement.currentStreak);
         }
@@ -276,7 +387,9 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       if (dailyWin) {
         NeoToast.show(
           context,
-          "Today's puzzle solved! A new one arrives tomorrow.",
+          hintBudget.used == 0
+              ? "⭐ Today's puzzle, no hints! A new one arrives tomorrow."
+              : "Today's puzzle solved! A new one arrives tomorrow.",
           icon: Icons.check_circle_rounded,
           color: const Color(0xFF4ADE80),
           duration: const Duration(milliseconds: 2400),
@@ -287,7 +400,9 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
       NeoToast.show(
         context,
         won
-            ? 'Nicely solved. Next puzzle coming up!'
+            ? (hintBudget.used == 0
+                  ? '⭐ Solved with no hints! Next puzzle coming up.'
+                  : 'Nicely solved. Next puzzle coming up!')
             : 'Fresh puzzle coming up.',
         icon: won ? Icons.check_circle_rounded : Icons.auto_awesome_rounded,
         color: won ? const Color(0xFF4ADE80) : const Color(0xFF38BDF8),
@@ -350,6 +465,7 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _advanceReserved = false;
     setState(() {
       _dayKey = DateService.todayKey();
+      _special = null;
       _mode = value;
       _finishing = false;
       onPracticeModeChanged(value);
@@ -358,6 +474,11 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   void _switchDifficulty(String value) {
     if (value == difficulty || _transitioning || _finishing) return;
+    // The weekly challenge is always played on Hard.
+    if (isWeekly) {
+      showPuzzleHint('The weekly challenge is always Hard. Switch to Unlimited to pick a level.');
+      return;
+    }
     _saveSession();
     _saveTimer?.cancel();
     _advanceTimer?.cancel();
@@ -385,6 +506,9 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
 
   /// Whether today's daily puzzle at [level] is already solved.
   bool isDailyDone([String? level]) {
+    final prefs = ref.read(sharedPreferencesProvider);
+    if (isWeekly) return SpecialPuzzles.weeklyDone(prefs);
+    if (isArchive) return SpecialPuzzles.archiveDone(prefs, gameType).contains(_dayKey);
     final raw = ref.read(sharedPreferencesProvider).getString('$_dailyDonePrefix$gameType');
     if (raw == null) return false;
     final parts = raw.split('|');
@@ -392,8 +516,44 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         parts.skip(1).contains(level ?? difficulty);
   }
 
+  String get _resultKey => 'daily_result_v1_$gameType';
+
+  /// Shares the result card for the daily/archive/weekly puzzle just solved.
+  Future<void> _shareResult() async {
+    final game = GameCatalog.byId(gameType);
+    if (game == null) return;
+    final prefs = ref.read(sharedPreferencesProvider);
+    final parts = (prefs.getString(_resultKey) ?? '').split('|');
+    final matches = parts.length == 4 && parts[0] == _dayKey && parts[1] == difficulty;
+    final seconds = matches ? int.tryParse(parts[2]) ?? 0 : 0;
+    final hints = matches ? int.tryParse(parts[3]) : null;
+    final streak = ref.read(engagementServiceProvider).load().currentStreak;
+    try {
+      await ShareCard.share(
+        gameName: game.name,
+        accent: game.color,
+        headline: isWeekly ? 'Weekly Challenge solved!' : 'Solved ${_specialLabel().replaceAll(RegExp(r'^[^A-Za-z]+'), '')}',
+        lines: [
+          '$difficulty difficulty',
+          if (seconds > 0) 'Time: ${formatClock(seconds)}',
+          if (hints != null) hints == 0 ? '⭐ No hints used' : 'Hints used: $hints',
+          if (streak > 0) '🔥 $streak-day streak',
+        ],
+      );
+    } catch (_) {
+      if (mounted) showPuzzleHint('Sharing is not available right now.');
+    }
+  }
+
   void _markDailyDone() {
     final prefs = ref.read(sharedPreferencesProvider);
+    prefs.setString(_resultKey, '$_dayKey|$difficulty|${puzzleElapsed.value}|${hintBudget.used}');
+    if (isWeekly) {
+      SpecialPuzzles.markWeeklyDone(prefs);
+      return;
+    }
+    SpecialPuzzles.markArchiveDone(prefs, gameType, _dayKey);
+    if (isArchive) return;
     final today = DateService.todayKey();
     final raw = prefs.getString('$_dailyDonePrefix$gameType');
     final parts = raw?.split('|') ?? const <String>[];
@@ -401,6 +561,15 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         ? {...parts.skip(1), difficulty}
         : {difficulty};
     prefs.setString('$_dailyDonePrefix$gameType', [today, ...levels].join('|'));
+  }
+
+  String _specialLabel() {
+    if (isWeekly) return '🏆 Weekly Challenge · Hard';
+    if (_special == null) return "Today's Daily";
+    final d = DateTime.tryParse(_dayKey);
+    if (d == null) return 'Archive';
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return '📅 Archive · ${d.day} ${months[d.month - 1]} ${d.year}';
   }
 
   Widget buildPracticeModeToggle() => Column(
@@ -413,8 +582,17 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
         onDifficultyChanged: _switchDifficulty,
         onNext: _onNextTapped,
       ),
+      if (_special != null) _SpecialBadge(label: _specialLabel()),
       if (mode == GameMode.daily && isDailyDone())
-        DailyDoneBanner(onPlayUnlimited: () => _switchMode(GameMode.practice)),
+        DailyDoneBanner(
+          label: isWeekly
+              ? 'Weekly challenge done ✓'
+              : isArchive
+              ? 'Archive puzzle done ✓'
+              : null,
+          onPlayUnlimited: () => _switchMode(GameMode.practice),
+          onShare: _shareResult,
+        ),
     ],
   );
   @override
@@ -424,7 +602,33 @@ mixin PracticeModeMixin<T extends ConsumerStatefulWidget> on ConsumerState<T> {
     _saveTimer?.cancel();
     _advanceTimer?.cancel();
     _lifecycle?.dispose();
+    hintBudget.dispose();
+    wrongPulse.dispose();
+    winPulse.dispose();
     puzzleElapsed.dispose();
     super.dispose();
   }
+}
+
+class _SpecialBadge extends StatelessWidget {
+  final String label;
+  const _SpecialBadge({required this.label});
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+    child: Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      decoration: BoxDecoration(
+        color: const Color(0xFFC084FC),
+        borderRadius: BorderRadius.circular(12),
+        border: Neo.border(2),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, color: Colors.black),
+      ),
+    ),
+  );
 }

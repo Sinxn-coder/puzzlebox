@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/mixins/practice_mode_mixin.dart';
 import '../../core/widgets/app_scaffold.dart';
@@ -21,6 +22,10 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
     with PracticeModeMixin {
   @override
   String get gameType => widget.mini ? 'mini_crossword' : 'crossword';
+
+  /// v2: larger word and clue bank.
+  @override
+  int get puzzleVersion => 2;
   late CrosswordPuzzle _puzzle;
   late List<String> _letters;
   final List<List<String>> _history = [];
@@ -116,11 +121,15 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
       showBackButton: true,
       gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       onUndo: () {
         if (_history.isEmpty || _solved) return;
         setState(() => _letters = _history.removeLast());
       },
       hintTooltip: 'Reveal selected letter',
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: () {
         if (_solved) return;
         showPuzzleHint(
@@ -282,7 +291,7 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
                                   ),
                                 ),
                               Center(
-                                child: Text(
+                                child: PopOnChange(value: _letters[i], child: Text(
                                   _letters[i],
                                   style: TextStyle(
                                     fontWeight: FontWeight.w800,
@@ -290,7 +299,7 @@ class _CrosswordState extends ConsumerState<CrosswordScreen>
                                         ? colors.error
                                         : colors.onSurface,
                                   ),
-                                ),
+                                )),
                               ),
                             ],
                           ),

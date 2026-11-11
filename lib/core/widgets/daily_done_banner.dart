@@ -6,7 +6,18 @@ import '../theme/neo.dart';
 /// daily and a quick way into Unlimited.
 class DailyDoneBanner extends StatefulWidget {
   final VoidCallback onPlayUnlimited;
-  const DailyDoneBanner({super.key, required this.onPlayUnlimited});
+
+  /// Replaces the default "Today's done" text (archive, weekly).
+  final String? label;
+
+  /// Shares a result card when provided.
+  final VoidCallback? onShare;
+  const DailyDoneBanner({
+    super.key,
+    required this.onPlayUnlimited,
+    this.label,
+    this.onShare,
+  });
 
   @override
   State<DailyDoneBanner> createState() => _DailyDoneBannerState();
@@ -56,7 +67,7 @@ class _DailyDoneBannerState extends State<DailyDoneBanner> {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                "Today's done ✓ · next in ${untilTomorrow()}",
+                widget.label ?? "Today's done ✓ · next in ${untilTomorrow()}",
                 maxLines: 2,
                 style: const TextStyle(
                   fontWeight: FontWeight.w900,
@@ -65,6 +76,13 @@ class _DailyDoneBannerState extends State<DailyDoneBanner> {
                 ),
               ),
             ),
+            if (widget.onShare != null)
+              IconButton(
+                tooltip: 'Share result',
+                visualDensity: VisualDensity.compact,
+                onPressed: widget.onShare,
+                icon: const Icon(Icons.ios_share_rounded, color: Colors.black, size: 20),
+              ),
             const SizedBox(width: 6),
             TextButton(
               style: TextButton.styleFrom(

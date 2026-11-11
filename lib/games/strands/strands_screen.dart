@@ -3,6 +3,7 @@ import 'package:puzzlebox/core/theme/neo.dart';
 import 'path_generator.dart';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import '../../core/services/puzzle_content.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/theme/app_colors.dart';
@@ -37,6 +38,10 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
     with PracticeModeMixin {
   @override
   String get gameType => 'strands';
+
+  /// v2: larger theme bank, no repeats in Unlimited.
+  @override
+  int get puzzleVersion => 2;
 
   final int _rows = 8;
   final int _cols = 6;
@@ -75,58 +80,7 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
 
   void _loadStrandsPuzzle() {
     final rand = Random(puzzleSeed());
-    final themes = [
-      [
-        'Night sky',
-        'ASTRONOMY',
-        'MOON',
-        'STAR',
-        'COMET',
-        'GALAXY',
-        'NEBULA',
-        'PLANET',
-        'ORBIT',
-        'SUN',
-      ],
-      [
-        'Under the sea',
-        'OCEANLIFE',
-        'SHARK',
-        'CORAL',
-        'WHALE',
-        'DOLPHIN',
-        'SQUID',
-        'REEF',
-        'FISH',
-        'WAVE',
-      ],
-      [
-        'In bloom',
-        'FLOWERGARDEN',
-        'ROSE',
-        'LILY',
-        'TULIP',
-        'DAISY',
-        'IRIS',
-        'POPPY',
-        'ASTER',
-        'FERN',
-      ],
-      [
-        'Tools in the kitchen',
-        'COOKWARE',
-        'SPOON',
-        'FORK',
-        'KNIFE',
-        'LADLE',
-        'WHISK',
-        'PAN',
-        'POT',
-        'PLATE',
-        'TONGS',
-      ],
-    ];
-    final theme = themes[rand.nextInt(themes.length)];
+    final theme = strandsThemes[uniqueIndex(strandsThemes.length)];
     final words = theme.skip(2).toList()..shuffle(rand);
     final chosen = [theme[1], ...words];
     var path = [
@@ -304,6 +258,8 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       undoTooltip: 'Undo found word',
       onUndo: () {
         if (_isSolved || _foundThemeWords.isEmpty) return;
@@ -315,6 +271,8 @@ class _StrandsScreenState extends ConsumerState<StrandsScreen>
           _selectedIndices.clear();
         });
       },
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: () {
         final remaining = _currentTheme.themeWords
             .where((w) => !_foundThemeWords.contains(w))

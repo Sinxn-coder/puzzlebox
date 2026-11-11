@@ -1,3 +1,4 @@
+import '../../screens/achievements_screen.dart';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:puzzlebox/core/theme/neo.dart';
@@ -47,6 +48,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
   int _puzzleStepIndex = 0;
   chess_lib.Color _puzzleSide = chess_lib.Color.WHITE;
   bool _puzzleCompleted = false;
+  final ValueNotifier<int> _wrongPulse = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -362,6 +364,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
 
     if (!correct) {
       AppFeedbackService.error(ref);
+      _wrongPulse.value++;
       NeoToast.show(
         context,
         _game.in_check
@@ -486,6 +489,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
         .recordCompletion(game: 'chess', difficulty: difficulty);
     if (!mounted) return;
     ref.read(engagementRevisionProvider.notifier).state++;
+    announceAchievements(context, ref);
     if (engagement.streakEarnedToday) {
       StreakEarnedDialog.show(context, streak: engagement.currentStreak);
     }
@@ -585,6 +589,7 @@ class _ChessScreenState extends ConsumerState<ChessScreen> {
       title: 'Chess',
       showBackButton: true,
       gameId: 'chess',
+      shake: _wrongPulse,
       body: SingleChildScrollView(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(

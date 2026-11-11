@@ -1,4 +1,3 @@
-import 'dart:math';
 import 'package:puzzlebox/games/spelling_bee/spelling_bee_screen.dart';
 import 'package:puzzlebox/games/letter_boxed/letter_boxed_screen.dart';
 import 'package:puzzlebox/games/letter_boxed/boxed_generator.dart';
@@ -6,6 +5,7 @@ import 'package:puzzlebox/games/vertex/vertex_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:puzzlebox/core/services/hint_budget.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:puzzlebox/core/providers/settings_provider.dart';
 import 'package:puzzlebox/core/services/practice_service.dart';
@@ -22,6 +22,8 @@ import 'package:puzzlebox/games/strands/strands_solver.dart';
 import 'package:puzzlebox/games/tiles/tiles_screen.dart';
 
 void main() {
+  // Hint pacing is covered elsewhere; playthroughs may ask for many hints.
+  setUpAll(() => HintBudget.cooldown = Duration.zero);
   Future<SharedPreferences> mount(WidgetTester tester, Widget screen) async {
     tester.view.physicalSize = const Size(500, 1100);
     tester.view.devicePixelRatio = 1;
@@ -166,10 +168,8 @@ void main() {
   ) async {
     final prefs = await mount(tester, const SpellingBeeScreen());
     final dynamic state = tester.state(find.byType(SpellingBeeScreen));
-    final random = Random(state.puzzleSeed());
-    final bases = List<String>.from(beePangrams)..shuffle(random);
-    final letters = bases.first.split('').toSet().toList()..shuffle(random);
-    final words = {...WordList.answers, ...clueBank.keys, ...beePangrams}
+    final letters = List<String>.from(state.debugLetters as List);
+    final words = List<String>.from(state.debugWords as List)
         .where(
           (w) =>
               w.length >= 4 &&

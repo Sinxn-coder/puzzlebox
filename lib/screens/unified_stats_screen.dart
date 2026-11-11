@@ -1,3 +1,5 @@
+import '../core/services/achievements.dart';
+import 'achievements_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -193,6 +195,17 @@ class UnifiedStatsScreen extends ConsumerWidget {
                 color: AppTheme.getAccentColor(const Color(0xFFC084FC), settings.palette),
               ),
             ],
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => AchievementsScreen.open(context),
+              icon: const Icon(Icons.emoji_events_outlined),
+              label: Text(
+                'All achievements · ${Achievements.all.where((a) => a.unlocked(Achievements.dataFrom(ref.read(sharedPreferencesProvider), engagement))).length}/${Achievements.all.length}',
+              ),
+            ),
           ),
           if (engagement.history.isNotEmpty) ...[
             const SizedBox(height: 32),

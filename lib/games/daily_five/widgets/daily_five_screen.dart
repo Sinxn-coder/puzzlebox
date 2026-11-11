@@ -1,3 +1,7 @@
+import '../../../core/services/engagement_service.dart';
+import '../../../core/theme/feedback_colors.dart';
+import '../../../core/services/share_card.dart';
+import '../../../screens/achievements_screen.dart';
 import 'dart:async';
 import '../../../core/providers/settings_provider.dart';
 import '../models/letter_state.dart';
@@ -7,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/services/date_service.dart';
 import '../../../core/services/practice_service.dart';
 import '../../../core/services/session_resume.dart';
+import '../../../core/services/hint_budget.dart';
 import '../../../core/widgets/app_scaffold.dart';
 import '../models/daily_five_state.dart';
 import '../providers/daily_five_provider.dart';
@@ -32,6 +37,8 @@ class DailyFiveScreen extends ConsumerStatefulWidget {
 
 class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
   bool _modalShown = false;
+  final HintBudget _hints = HintBudget();
+  String? _hintAnswer;
   GameMode _mode = GameMode.practice;
   Timer? _nextTimer;
   String _difficulty = 'Medium';
@@ -64,6 +71,13 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
   @override
   Widget build(BuildContext context) {
     final game = ref.watch(dailyFiveProvider(_mode));
+    // A new word gets a fresh hint budget.
+    if (_hintAnswer != game.answer) {
+      _hintAnswer = game.answer;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _hints.reset();
+      });
+    }
 
     if (game.isComplete && !game.isAnimating && !_modalShown) {
       _modalShown = true;
@@ -75,6 +89,7 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
         if (game.phase == GamePhase.won) {
           AppFeedbackService.victory(ref);
           showCelebrationBurst(context);
+          announceAchievements(context, ref);
           if (game.streakEarnedToday) {
             StreakEarnedDialog.show(context, streak: game.earnedStreak);
           }
@@ -114,7 +129,38 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
           : 'Daily Five — Unlimited',
       showBackButton: true,
             gameId: 'daily_five',
+      hintBadge: _hints.badge,
+      hintGate: () {
+        if (game.isComplete) return false;
+        if (_hints.tryUse()) return true;
+        NeoToast.show(
+          context,
+          'Next hint in ${HintBudget.format(_hints.waitLeft!)}. Give it a try first!',
+          icon: Icons.hourglass_top_rounded,
+          color: const Color(0xFFFACC15),
+        );
+        return false;
+      },
       onHint: () => _showHints(context, dateKey),
+      menuItems: [
+        (
+          ref.watch(settingsProvider).hardModeEnabled
+              ? Icons.toggle_on_rounded
+              : Icons.toggle_off_outlined,
+          'Hard Mode: ${ref.watch(settingsProvider).hardModeEnabled ? 'On' : 'Off'}',
+          () {
+            final on = !ref.read(settingsProvider).hardModeEnabled;
+            ref.read(settingsProvider.notifier).setHardModeEnabled(on);
+            NeoToast.show(
+              context,
+              on
+                  ? 'Hard Mode on: revealed hints must be used in later guesses.'
+                  : 'Hard Mode off.',
+              icon: Icons.psychology_rounded,
+            );
+          },
+        ),
+      ],
       actions: [
         AppBarIconButton(
           icon: Icons.bar_chart_rounded,
@@ -151,6 +197,7 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
           if (_mode == GameMode.daily && game.isComplete && !game.isAnimating)
             DailyDoneBanner(
               onPlayUnlimited: () => _onModeChanged(GameMode.practice),
+              onShare: () => _shareDaily(game),
             ),
           _ToastBar(mode: _mode),
           SizedBox(height: 12),
@@ -172,6 +219,39 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
       ),
       ),
     );
+  }
+
+  /// Result card with the colour grid (no letters, so no spoilers).
+  Future<void> _shareDaily(DailyFiveState game) async {
+    final rows = [
+      for (final row in game.board.take(game.currentRow))
+        [
+          for (final tile in row)
+            switch (tile.state) {
+              LetterState.correct => FeedbackColors.correct,
+              LetterState.present => FeedbackColors.present,
+              _ => const Color(0xFF94A3B8),
+            },
+        ],
+    ];
+    final won = game.phase == GamePhase.won;
+    final streak = ref.read(engagementServiceProvider).load().currentStreak;
+    try {
+      await ShareCard.share(
+        gameName: 'Daily Five #${game.puzzleNumber}',
+        accent: const Color(0xFF4ADE80),
+        headline: won ? 'Solved in ${game.currentRow}/6' : 'X/6 today',
+        grid: rows,
+        lines: [
+          if (_hints.used == 0) '⭐ No hints used' else 'Hints used: ${_hints.used}',
+          if (streak > 0) '🔥 $streak-day streak',
+        ],
+      );
+    } catch (_) {
+      if (mounted) {
+        NeoToast.show(context, 'Sharing is not available right now.');
+      }
+    }
   }
 
   KeyEventResult _onKey(KeyEvent event, DailyFiveState game) {
@@ -242,6 +322,7 @@ class _DailyFiveScreenState extends ConsumerState<DailyFiveScreen> {
   @override
   void dispose() {
     _nextTimer?.cancel();
+    _hints.dispose();
     super.dispose();
   }
 

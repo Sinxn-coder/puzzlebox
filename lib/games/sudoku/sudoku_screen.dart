@@ -3,6 +3,7 @@ import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/foundation.dart';
 import 'sudoku_generator.dart';
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/services/stats_service.dart';
 import '../../core/services/app_feedback_service.dart';
@@ -288,7 +289,11 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       onUndo: _undo,
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: _hint,
       body: _solution.isEmpty
           ? Column(
@@ -411,7 +416,7 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                                   ),
                                   child: Center(
                                     child: val != 0
-                                        ? Text(
+                                        ? PopOnChange(value: val, child: Text(
                                             '$val',
                                             style: TextStyle(
                                               fontSize: 20,
@@ -422,7 +427,7 @@ class _SudokuScreenState extends ConsumerState<SudokuScreen>
                                                       ? AppColors.error
                                                       : (isSelected ? Colors.black : Theme.of(context).colorScheme.primary),
                                             ),
-                                          )
+                                          ))
                                         : notes.isNotEmpty
                                             ? Wrap(
                                                 children: notes

@@ -14,11 +14,19 @@ class _PressableScaleState extends State<PressableScale> {
     onPointerDown: (_) => setState(() => down = true),
     onPointerUp: (_) => setState(() => down = false),
     onPointerCancel: (_) => setState(() => down = false),
-    child: AnimatedScale(
-      scale: down && !MediaQuery.disableAnimationsOf(context) ? .975 : 1,
+    child: AnimatedSlide(
+      // Neo-brutalist press: the card sinks toward its hard shadow.
+      offset: down && !MediaQuery.disableAnimationsOf(context)
+          ? const Offset(.006, .02)
+          : Offset.zero,
       duration: const Duration(milliseconds: 90),
       curve: Curves.easeOutCubic,
-      child: widget.child,
+      child: AnimatedScale(
+        scale: down && !MediaQuery.disableAnimationsOf(context) ? .975 : 1,
+        duration: const Duration(milliseconds: 90),
+        curve: Curves.easeOutCubic,
+        child: widget.child,
+      ),
     ),
   );
 }

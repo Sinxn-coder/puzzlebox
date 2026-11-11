@@ -223,6 +223,8 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
       showBackButton: true,
       gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       onUndo: () {
                   if (_history.isNotEmpty && !_isSolved) {
                     setState(() {
@@ -233,6 +235,8 @@ class _VertexScreenState extends ConsumerState<VertexScreen>
                     });
                   }
                 },
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: () {
                   final extra = _userConnections
                       .where(

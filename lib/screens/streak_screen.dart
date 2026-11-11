@@ -654,6 +654,14 @@ class _StreakScreenState extends ConsumerState<StreakScreen>
 
                       const SizedBox(height: 20),
 
+                      _FreezeInfo(
+                        freezes: engagement.freezes,
+                        streak: engagement.currentStreak,
+                        textColor: textColor,
+                        cardBg: cardBg,
+                      ),
+                      const SizedBox(height: 20),
+
                       // Encouragement Message (Animated Entrance #4)
                       FadeTransition(
                         opacity: _card4Fade,
@@ -1276,6 +1284,75 @@ class _FirstStreakGuide extends StatelessWidget {
           label: Text('Play ${pick.name}'),
         ),
       ],
+    );
+  }
+}
+
+/// Streak freezes in hand and how the next one is earned.
+class _FreezeInfo extends StatelessWidget {
+  final int freezes;
+  final int streak;
+  final Color textColor;
+  final Color cardBg;
+  const _FreezeInfo({
+    required this.freezes,
+    required this.streak,
+    required this.textColor,
+    required this.cardBg,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    const max = EngagementService.maxFreezes;
+    final toNext = 7 - streak % 7;
+    final detail = freezes >= max
+        ? 'Freezes full. A missed day is covered automatically.'
+        : 'Next freeze in $toNext ${toNext == 1 ? 'day' : 'days'} of streak. Missed days use one automatically.';
+    return Semantics(
+      label: 'Streak freezes: $freezes of $max. $detail',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(16),
+          border: Neo.border(2),
+          boxShadow: Neo.shadow(2.5),
+        ),
+        child: Row(
+          children: [
+            for (var i = 0; i < max; i++)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: Icon(
+                  Icons.ac_unit_rounded,
+                  size: 26,
+                  color: i < freezes ? const Color(0xFF38BDF8) : textColor.withValues(alpha: .2),
+                ),
+              ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Streak freezes: $freezes/$max',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w900, color: textColor),
+                  ),
+                  Text(
+                    detail,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: textColor.withValues(alpha: .7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

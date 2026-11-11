@@ -179,7 +179,11 @@ class _NonogramScreenState extends ConsumerState<NonogramScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       onUndo: _undo,
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: _hint,
       body: _puzzle == null
           ? Column(

@@ -24,7 +24,17 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
   @override
   String get gameType => 'spelling_bee';
 
+  /// v2: bigger pangram bank and word list, no repeats in Unlimited.
+  @override
+  int get puzzleVersion => 2;
+
   String _centerLetter = 'A';
+
+  /// Puzzle letters (centre first) and target words, for tests.
+  @visibleForTesting
+  List<String> get debugLetters => [_centerLetter, ..._outerLetters];
+  @visibleForTesting
+  List<String> get debugWords => _validDictionary.keys.toList();
   List<String> _outerLetters = ['C', 'T', 'I', 'O', 'N', 'P'];
   String _currentInput = '';
   final List<String> _foundWords = [];
@@ -58,10 +68,19 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
 
   void _loadBeePuzzle() {
     final rand = Random(puzzleSeed());
-    final dictionary = {...WordList.answers, ...clueBank.keys, ...beePangrams};
-    final bases = List<String>.from(beePangrams)..shuffle(rand);
-    final letters = bases.first.split('').toSet().toList()..shuffle(rand);
-    final center = letters.first;
+    final dictionary = {
+      ...WordList.answers,
+      ...WordList.dailyFiveAnswers,
+      ...clueBank.keys,
+      ...beePangrams,
+    };
+    // Each pangram with each of its 7 letters in the centre is a different
+    // puzzle; the deck plays every combination before any repeat.
+    final pick = uniqueIndex(beePangrams.length * 7);
+    final base = beePangrams[pick ~/ 7];
+    final distinct = base.split('').toSet().toList();
+    final center = distinct[pick % 7];
+    final letters = [center, ...(distinct.where((l) => l != center).toList()..shuffle(rand))];
     final words = dictionary
         .where(
           (w) =>
@@ -117,18 +136,18 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
   void _submit() {
     if (_isGameComplete) return;
     if (_currentInput.length < 4) {
-      AppFeedbackService.error(ref);
+      signalWrong();
       _showToast('Too short');
       return;
     }
     if (!_currentInput.contains(_centerLetter)) {
-      AppFeedbackService.error(ref);
+      signalWrong();
       _showToast('Missing center letter');
       return;
     }
 
     if (_foundWords.contains(_currentInput)) {
-      AppFeedbackService.error(ref);
+      signalWrong();
       _showToast('Already found');
       return;
     }
@@ -157,7 +176,7 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
         _completeGame();
       }
     } else {
-      AppFeedbackService.error(ref);
+      signalWrong();
       _showToast('Not in word list');
     }
   }
@@ -225,6 +244,10 @@ class _SpellingBeeScreenState extends ConsumerState<SpellingBeeScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: () {
         final words = _validDictionary.keys
             .where((w) => !_foundWords.contains(w))

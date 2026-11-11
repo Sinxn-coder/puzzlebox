@@ -40,9 +40,31 @@ class ChessBoardWidget extends StatelessWidget {
     return null;
   }
 
+  /// Display position (column, row) of a square for the current orientation.
+  (int, int) _cell(String square) {
+    final file = square.codeUnitAt(0) - 'a'.codeUnitAt(0);
+    final rank = int.parse(square.substring(1));
+    return isFlipped ? (7 - file, rank - 1) : (file, 8 - rank);
+  }
+
+  Widget _flyingPiece(double cell, double t, String to) {
+    final (fx, fy) = _cell(lastMove!['from']!);
+    final (tx, ty) = _cell(to);
+    return Positioned(
+      left: (fx + (tx - fx) * t) * cell,
+      top: (fy + (ty - fy) * t) * cell,
+      width: cell,
+      height: cell,
+      child: IgnorePointer(
+        child: Center(child: ChessPieceWidget(piece: game.get(to)!, size: 36)),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
     final checkedKing = _getCheckedKingSquare();
 
     final lightSquareColor = const Color(0xFFF0D9B5);
@@ -60,7 +82,18 @@ class ChessBoardWidget extends StatelessWidget {
           boxShadow: Neo.shadow(4),
         ),
         clipBehavior: Clip.antiAlias,
-        child: Column(
+        child: TweenAnimationBuilder<double>(
+          // Each new move glides its piece from the old square to the new one.
+          key: ValueKey('${game.fen}|${lastMove?['from']}${lastMove?['to']}'),
+          tween: Tween(begin: lastMove == null || reduceMotion ? 1.0 : 0.0, end: 1.0),
+          duration: const Duration(milliseconds: 230),
+          curve: Curves.easeOutCubic,
+          builder: (context, t, _) {
+            final String? hidden = (t < 1 && lastMove != null) ? lastMove!['to'] : null;
+            return LayoutBuilder(
+              builder: (context, box) => Stack(
+                children: [
+                  Column(
           children: List.generate(8, (rankIndex) {
             final actualRank = isFlipped ? rankIndex + 1 : 8 - rankIndex;
 
@@ -72,7 +105,7 @@ class ChessBoardWidget extends StatelessWidget {
                   final squareId = '$fileChar$actualRank';
 
                   final isLight = (actualRank + actualFileIndex) % 2 != 0;
-                  final piece = game.get(squareId);
+                  final piece = squareId == hidden ? null : game.get(squareId);
                   final isSelected = selectedSquare == squareId;
                   final isValidDestination = validMoves.contains(squareId);
                   final isLastMove = lastMove != null &&
@@ -157,6 +190,13 @@ class ChessBoardWidget extends StatelessWidget {
               ),
             );
           }),
+        ),
+                  if (hidden != null && game.get(hidden) != null)
+                    _flyingPiece(box.maxWidth / 8, t, hidden),
+                ],
+              ),
+            );
+          },
         ),
       ),
     );

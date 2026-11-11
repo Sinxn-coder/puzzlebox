@@ -109,8 +109,14 @@ void main() {
           }
           expect(tester.takeException(), isNull);
           // On short screens the row is below the fold and not built yet.
-          if (entry.key == 'home' && size.height >= 800) {
+          if (entry.key == 'home') {
+            await tester.scrollUntilVisible(
+              find.text('CONTINUE PLAYING'),
+              200,
+              scrollable: find.byType(Scrollable).first,
+            );
             expect(find.text('CONTINUE PLAYING'), findsOneWidget);
+            expect(tester.takeException(), isNull);
           }
         },
       );

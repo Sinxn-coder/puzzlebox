@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:puzzlebox/core/theme/neo.dart';
 import 'package:flutter/material.dart';
+import '../../core/widgets/motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'binary_generator.dart';
 import '../../core/theme/app_colors.dart';
@@ -209,7 +210,11 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       onUndo: _undo,
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: _hint,
       body: _puzzle == null
           ? Column(
@@ -327,7 +332,7 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
                                   child: Center(
                                     child: value == -1
                                         ? null
-                                        : Text(
+                                        : PopOnChange(value: value, child: Text(
                                             '$value',
                                             style: TextStyle(
                                               fontSize: 20,
@@ -338,7 +343,7 @@ class _BinaryScreenState extends ConsumerState<BinaryScreen>
                                                   ? colors.onSurface
                                                   : colors.primary,
                                             ),
-                                          ),
+                                          )),
                                   ),
                                 ),
                               );

@@ -39,6 +39,10 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
   @override
   String get gameType => 'letter_boxed';
 
+  /// v2: larger word and clue bank.
+  @override
+  int get puzzleVersion => 2;
+
   List<String> _solution = [];
   bool _loading = true;
   bool _isGenerating = false;
@@ -236,6 +240,10 @@ class _LetterBoxedScreenState extends ConsumerState<LetterBoxedScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: _hint,
       body: (_loading && _top == null)
           ? Column(

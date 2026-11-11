@@ -7,10 +7,14 @@ import '../core/services/date_service.dart';
 import '../core/services/engagement_service.dart';
 import '../core/services/practice_service.dart';
 import '../core/services/session_resume.dart';
+import '../core/services/special_puzzles.dart';
+import 'archive_screen.dart';
 import '../core/theme/app_theme.dart';
 import '../core/theme/neo.dart';
 import '../core/widgets/app_scaffold.dart';
 import '../core/widgets/pressable_scale.dart';
+import '../core/widgets/motion.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'streak_screen.dart';
 
 const _categoryIcons = {
@@ -28,8 +32,21 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeState extends ConsumerState<HomeScreen> {
+  /// Home slides in once per app launch; later visits appear instantly.
+  static bool _hasEntered = false;
+  late final bool _animateIn = !_hasEntered;
+
+  /// Last trio progress shown, so the ring fills from there after a solve.
+  static double _lastTrio = -1;
+
   String _query = '';
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _hasEntered = true;
+  }
 
   @override
   void dispose() {
@@ -161,13 +178,9 @@ class _HomeState extends ConsumerState<HomeScreen> {
                                       : Colors.black87,
                                 ),
                                 const SizedBox(width: 4),
-                                Text(
-                                  '${engagement.currentStreak}d Streak',
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w900,
-                                    color: Colors.black,
-                                  ),
+                                _StreakCount(
+                                  streak: engagement.currentStreak,
+                                  prefs: prefs,
                                 ),
                               ],
                             ),
@@ -182,7 +195,7 @@ class _HomeState extends ConsumerState<HomeScreen> {
 
             // Headline
             SliverToBoxAdapter(
-              child: Padding(
+              child: EntranceFade(enabled: _animateIn, delay: const Duration(milliseconds: 60), child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
                 child: Semantics(
                   header: true,
@@ -198,25 +211,25 @@ class _HomeState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ),
-              ),
-            ),
+              )),
+),
 
             // "Next up": only when there is something important to say.
             if (_nextUp(engagement, today, picks, playedToday, resumable)
                 case final nextUp?)
               SliverToBoxAdapter(
-                child: Padding(
+                child: EntranceFade(enabled: _animateIn, delay: const Duration(milliseconds: 120), child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
                   child: _NextUpCard(
                     data: nextUp,
                     onTap: () => _openGame(nextUp.game),
                   ),
-                ),
-              ),
+                )),
+),
 
             // Today hero
             SliverToBoxAdapter(
-              child: Padding(
+              child: EntranceFade(enabled: _animateIn, delay: const Duration(milliseconds: 180), child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
                 child: _TodayCard(
                   picks: picks,
@@ -227,6 +240,53 @@ class _HomeState extends ConsumerState<HomeScreen> {
                   accent: primaryAccent,
                   palette: settings.palette,
                   onOpen: _openGame,
+                ),
+              )),
+),
+
+            // Weekly challenge + archive
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        flex: 3,
+                        child: _FeatureCard(
+                          icon: SpecialPuzzles.weeklyDone(prefs)
+                              ? Icons.check_circle_rounded
+                              : Icons.emoji_events_rounded,
+                          color: const Color(0xFFC084FC),
+                          title: 'Weekly',
+                          subtitle: SpecialPuzzles.weeklyDone(prefs)
+                              ? 'Done ✓ · new in ${SpecialPuzzles.daysLeftInWeek()}d'
+                              : 'Hard ${GameCatalog.byId(SpecialPuzzles.weeklyGame())!.name} · ${SpecialPuzzles.daysLeftInWeek()}d left',
+                          onTap: () async {
+                            final id = SpecialPuzzles.weeklyGame();
+                            PuzzleLaunch.pending = PuzzleLaunch.weekly(id);
+                            await _openGame(GameCatalog.byId(id)!);
+                            PuzzleLaunch.pending = null;
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        flex: 2,
+                        child: _FeatureCard(
+                          icon: Icons.calendar_month_rounded,
+                          color: const Color(0xFF38BDF8),
+                          title: 'Archive',
+                          subtitle: 'Past dailies',
+                          onTap: () async {
+                            await ArchiveScreen.open(context);
+                            if (mounted) setState(() {});
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -267,7 +327,7 @@ class _HomeState extends ConsumerState<HomeScreen> {
 
             // Search
             SliverToBoxAdapter(
-              child: Padding(
+              child: EntranceFade(enabled: _animateIn, delay: const Duration(milliseconds: 240), child: Padding(
                 padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
                 child: Container(
                   height: 52,
@@ -316,8 +376,8 @@ class _HomeState extends ConsumerState<HomeScreen> {
                     ),
                   ),
                 ),
-              ),
-            ),
+              )),
+),
 
             SliverToBoxAdapter(
               child: Padding(
@@ -534,13 +594,17 @@ class _SectionHeader extends StatelessWidget {
             children: [
               Icon(icon, size: 16, color: colors.onSurfaceVariant),
               const SizedBox(width: 6),
-              Text(
-                title.toUpperCase(),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.2,
-                  color: colors.onSurface,
+              Flexible(
+                child: Text(
+                  title.toUpperCase(),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1.2,
+                    color: colors.onSurface,
+                  ),
                 ),
               ),
               if (trailing != null) ...[
@@ -647,7 +711,11 @@ class _TodayCard extends StatelessWidget {
                     children: [
                       SizedBox.expand(
                         child: TweenAnimationBuilder<double>(
-                          tween: Tween(begin: 0, end: progress),
+                          tween: Tween(
+                            begin: _HomeState._lastTrio < 0 ? 0 : _HomeState._lastTrio,
+                            end: progress,
+                          ),
+                          onEnd: () => _HomeState._lastTrio = progress,
                           duration: const Duration(milliseconds: 700),
                           curve: Curves.easeOutCubic,
                           builder: (_, value, _) => CircularProgressIndicator(
@@ -1072,6 +1140,133 @@ class _FolderCard extends ConsumerWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "12d Streak" that counts up (11 → 12) when the streak has grown since the
+/// player last saw Home.
+class _StreakCount extends StatefulWidget {
+  final int streak;
+  final SharedPreferences prefs;
+  const _StreakCount({required this.streak, required this.prefs});
+
+  @override
+  State<_StreakCount> createState() => _StreakCountState();
+}
+
+class _StreakCountState extends State<_StreakCount> {
+  static const _key = 'home_seen_streak_v1';
+  late int _from;
+
+  @override
+  void initState() {
+    super.initState();
+    final seen = widget.prefs.getInt(_key) ?? widget.streak;
+    _from = seen < widget.streak ? seen : widget.streak;
+    widget.prefs.setInt(_key, widget.streak);
+  }
+
+  @override
+  void didUpdateWidget(_StreakCount old) {
+    super.didUpdateWidget(old);
+    if (old.streak != widget.streak) {
+      _from = old.streak < widget.streak ? old.streak : widget.streak;
+      widget.prefs.setInt(_key, widget.streak);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final grew = _from < widget.streak;
+    return TweenAnimationBuilder<double>(
+      key: ValueKey(widget.streak),
+      tween: Tween(begin: _from.toDouble(), end: widget.streak.toDouble()),
+      duration: Duration(milliseconds: grew ? 900 : 1),
+      curve: Curves.easeOutCubic,
+      builder: (context, v, _) => Transform.scale(
+        scale: grew && v < widget.streak ? 1.12 : 1,
+        child: Text(
+          '${v.round()}d Streak',
+          style: const TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w900,
+            color: Colors.black,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _FeatureCard extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _FeatureCard({
+    required this.icon,
+    required this.color,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    return Semantics(
+      button: true,
+      label: '$title. $subtitle',
+      excludeSemantics: true,
+      child: PressableScale(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: BorderRadius.circular(16),
+            child: Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: isDark ? const Color(0xFF1E293B) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Neo.border(2.5),
+                boxShadow: Neo.shadow(3),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: color,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Neo.border(2),
+                    ),
+                    child: Icon(icon, color: Colors.black, size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(title, maxLines: 1, overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13.5)),
+                        Text(subtitle, maxLines: 2, overflow: TextOverflow.ellipsis,
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700,
+                                color: Theme.of(context).colorScheme.onSurfaceVariant)),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

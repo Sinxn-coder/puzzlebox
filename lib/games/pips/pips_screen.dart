@@ -403,7 +403,7 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
       int c2 = d.isVertical ? c : c + 1;
 
       if (r2 >= _rows || c2 >= _cols) {
-        AppFeedbackService.error(ref);
+        signalWrong();
         NeoToast.show(
           context,
           'Domino does not fit here!',
@@ -414,7 +414,7 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
       }
 
       if (_isCellOccupied(r, c) || _isCellOccupied(r2, c2)) {
-        AppFeedbackService.error(ref);
+        signalWrong();
         NeoToast.show(
           context,
           'Space is already occupied!',
@@ -492,6 +492,8 @@ class _PipsScreenState extends ConsumerState<PipsScreen> with PracticeModeMixin 
       showBackButton: true,
       gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       body: Column(
         children: [
           buildPracticeModeToggle(),

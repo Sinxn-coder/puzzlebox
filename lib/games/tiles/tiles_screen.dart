@@ -177,6 +177,8 @@ class _TilesScreenState extends ConsumerState<TilesScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
       undoTooltip: 'Undo match',
       onUndo: () {
         if (_history.isEmpty || _tiles.isEmpty) return;
@@ -188,6 +190,8 @@ class _TilesScreenState extends ConsumerState<TilesScreen>
           _firstSelected = null;
         });
       },
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: () {
         if (_tiles.isEmpty) return;
         final shape = _firstSelected?.shape ?? _tiles.first.shape;

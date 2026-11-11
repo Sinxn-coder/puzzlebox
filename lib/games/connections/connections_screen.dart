@@ -66,6 +66,10 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
   @override
   String get gameType => 'connections';
 
+  /// v2: bigger bank, colour tiers, no repeats in Unlimited.
+  @override
+  int get puzzleVersion => 2;
+
   late List<CategoryGroup> _categories;
   late List<String> _remainingWords;
   final List<String> _selectedWords = [];
@@ -98,36 +102,58 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
 
   void _resetPuzzle() {
     final rand = Random(puzzleSeed());
-    final bank = categoryBank.entries.toList();
-    final eligible = difficulty == 'Easy'
-        ? bank.take(18).toList()
+    // Easy: plain groups. Medium: adds trickier ones. Hard: always includes
+    // a wordplay (purple) group, NYT style.
+    final allowed = difficulty == 'Easy'
+        ? {1, 2}
         : difficulty == 'Hard'
-        ? bank.skip(12).toList()
-        : bank;
-    eligible.shuffle(rand);
-    _categories = [];
-    final used = <String>{};
-    for (final entry in eligible) {
-      final words = entry.value.where((w) => !used.contains(w)).toList()
-        ..shuffle(rand);
-      if (words.length < 4) continue;
-      final picked = words.take(4).toList();
-      used.addAll(picked);
-      _categories.add(
+        ? {2, 3, 4}
+        : {1, 2, 3, 4};
+    final bank = categoryBank.entries
+        .where((e) => allowed.contains(categoryLevels[e.key] ?? 2))
+        .toList();
+    final chosen = <MapEntry<String, List<String>>>[];
+    final usedWords = <String>{};
+    final needPurple = difficulty == 'Hard';
+    for (final i in uniqueDeck(bank.length, 4)) {
+      final entry = bank[i];
+      if (chosen.any((c) => c.key == entry.key)) continue;
+      final level = categoryLevels[entry.key] ?? 2;
+      final slotsLeft = 4 - chosen.length;
+      final hasPurple = chosen.any((c) => (categoryLevels[c.key] ?? 2) == 4);
+      if (needPurple && !hasPurple && slotsLeft == 1 && level != 4) continue;
+      // A word may not also belong to another group on the board, so every
+      // puzzle has exactly one solution.
+      final others = chosen.expand((c) => c.value).toSet();
+      final free = entry.value
+          .where((w) => !others.contains(w) && !usedWords.contains(w))
+          .toList();
+      final clashes = chosen.any(
+        (c) => c.value.any((w) => entry.value.contains(w) && usedWords.contains(w)),
+      );
+      if (free.length < 4 || clashes) continue;
+      chosen.add(MapEntry(entry.key, free));
+      usedWords.addAll(entry.value);
+      if (chosen.length == 4) break;
+    }
+    chosen.sort(
+      (x, y) => (categoryLevels[x.key] ?? 2).compareTo(categoryLevels[y.key] ?? 2),
+    );
+    const tierColors = [
+      AppColors.difficultyEasy,
+      AppColors.difficultyMedium,
+      AppColors.difficultyHard,
+      AppColors.difficultyExpert,
+    ];
+    _categories = [
+      for (final entry in chosen)
         CategoryGroup(
           title: entry.key,
-          words: picked,
-          color: [
-            AppColors.difficultyEasy,
-            AppColors.difficultyMedium,
-            AppColors.difficultyHard,
-            AppColors.difficultyExpert,
-          ][_categories.length],
+          words: (List<String>.from(entry.value)..shuffle(rand)).take(4).toList(),
+          color: tierColors[((categoryLevels[entry.key] ?? 2) - 1).clamp(0, 3)],
           difficultyLabel: difficulty,
         ),
-      );
-      if (_categories.length == 4) break;
-    }
+    ];
     final shuffledCategories = _categories;
 
     setState(() {
@@ -175,7 +201,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
 
     final guess = (_selectedWords.toList()..sort()).join('|');
     if (!_previousGuesses.add(guess)) {
-      AppFeedbackService.error(ref);
+      signalWrong();
       showPuzzleHint(
         'You already tried that group. Choose a different combination.',
       );
@@ -203,7 +229,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
           AppFeedbackService.tap(ref);
         }
       } else {
-        AppFeedbackService.error(ref);
+        signalWrong();
         _mistakesRemaining--;
         if (_mistakesRemaining == 0) {
           _isGameOver = true;
@@ -310,6 +336,10 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen>
       showBackButton: true,
             gameId: gameType,
       timer: puzzleElapsed,
+      shake: wrongPulse,
+      celebrate: winPulse,
+      hintGate: useHint,
+      hintBadge: hintBudget.badge,
       onHint: _hint,
       body: Column(
         children: [

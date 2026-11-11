@@ -8,6 +8,7 @@ import '../services/app_feedback_service.dart';
 import '../theme/app_theme.dart';
 import '../game_catalog.dart';
 import 'tutorial_sheet.dart';
+import 'motion.dart';
 
 /// Common scaffold used by all game screens and the home screen.
 ///
@@ -30,6 +31,19 @@ class AppScaffold extends ConsumerWidget {
   final ValueListenable<int>? timer;
   final VoidCallback? onUndo;
   final VoidCallback? onHint;
+
+  /// Asked before each hint; return false to refuse (e.g. cooldown).
+  final bool Function()? hintGate;
+
+  /// Small badge on the hint button (hints left or a countdown).
+  final ValueListenable<String?>? hintBadge;
+
+  /// Board shake on wrong moves and light sweep on wins.
+  final ValueListenable<int>? shake;
+  final ValueListenable<int>? celebrate;
+
+  /// Extra entries for the game's ⋮ menu: (icon, label, action).
+  final List<(IconData, String, VoidCallback)> menuItems;
   final String undoTooltip;
   final String hintTooltip;
 
@@ -46,6 +60,11 @@ class AppScaffold extends ConsumerWidget {
     this.timer,
     this.onUndo,
     this.onHint,
+    this.hintGate,
+    this.hintBadge,
+    this.shake,
+    this.celebrate,
+    this.menuItems = const [],
     this.undoTooltip = 'Undo',
     this.hintTooltip = 'Hint',
   });
@@ -128,10 +147,13 @@ class AppScaffold extends ConsumerWidget {
               onTap: onUndo!,
             ),
           if (onHint != null)
-            AppBarIconButton(
-              icon: Icons.lightbulb_outline_rounded,
+            _HintButton(
               tooltip: hintTooltip,
-              onTap: onHint!,
+              badge: hintBadge,
+              onTap: () {
+                if (hintGate?.call() == false) return;
+                onHint!();
+              },
             ),
           // Games fold rules + display settings into one menu so the bar
           // keeps room for the timer, undo and hint on small phones.
@@ -139,6 +161,7 @@ class AppScaffold extends ConsumerWidget {
             _MoreMenu(
               onRules: showInfoAction ? showRules : null,
               onSettings: showSettings,
+              extra: menuItems,
             )
           else ...[
             if (showInfoAction)
@@ -168,7 +191,7 @@ class AppScaffold extends ConsumerWidget {
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 680),
-            child: body,
+            child: _withMotion(body),
           ),
         ),
       ),
@@ -200,6 +223,15 @@ ThemeData tintedTheme(ThemeData base, Color accent) {
     ),
     navigationBarTheme: base.navigationBarTheme.copyWith(indicatorColor: accent),
   );
+}
+
+extension on AppScaffold {
+  Widget _withMotion(Widget child) {
+    var result = child;
+    if (celebrate != null) result = WinSweep(trigger: celebrate!, child: result);
+    if (shake != null) result = Shake(trigger: shake!, child: result);
+    return result;
+  }
 }
 
 /// Coloured icon tile for a game; flies between Home and the game screen.
@@ -238,10 +270,57 @@ class GameBadge extends StatelessWidget {
   }
 }
 
+class _HintButton extends StatelessWidget {
+  final String tooltip;
+  final ValueListenable<String?>? badge;
+  final VoidCallback onTap;
+  const _HintButton({required this.tooltip, required this.badge, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final button = AppBarIconButton(
+      icon: Icons.lightbulb_outline_rounded,
+      tooltip: tooltip,
+      onTap: onTap,
+    );
+    if (badge == null) return button;
+    return ValueListenableBuilder<String?>(
+      valueListenable: badge!,
+      builder: (context, text, child) => Stack(
+        clipBehavior: Clip.none,
+        children: [
+          child!,
+          if (text != null)
+            Positioned(
+              right: -2,
+              top: -4,
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Neo.border(1.2),
+                  ),
+                  child: Text(
+                    text,
+                    style: const TextStyle(fontSize: 9.5, fontWeight: FontWeight.w900, color: Colors.black),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+      child: button,
+    );
+  }
+}
+
 class _MoreMenu extends StatelessWidget {
   final VoidCallback? onRules;
   final VoidCallback onSettings;
-  const _MoreMenu({required this.onRules, required this.onSettings});
+  final List<(IconData, String, VoidCallback)> extra;
+  const _MoreMenu({required this.onRules, required this.onSettings, this.extra = const []});
 
   @override
   Widget build(BuildContext context) {
@@ -270,6 +349,8 @@ class _MoreMenu extends StatelessWidget {
               value: onRules,
               child: const _MenuRow(Icons.info_outline_rounded, 'How to play'),
             ),
+          for (final (icon, label, action) in extra)
+            PopupMenuItem(value: action, child: _MenuRow(icon, label)),
           PopupMenuItem(
             value: onSettings,
             child: const _MenuRow(Icons.tune_rounded, 'Display settings'),
